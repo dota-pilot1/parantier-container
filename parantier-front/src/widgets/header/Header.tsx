@@ -2,6 +2,7 @@ import { useStore } from '@tanstack/react-store'
 import { authStore } from '@/entities/user/model/authStore'
 import { LoginForm } from '@/features/auth/login/LoginForm'
 import { LogoutButton } from '@/features/auth/logout/LogoutButton'
+import { SignupDialog } from '@/features/auth/signup/SignupDialog'
 
 export function Header() {
   const auth = useStore(authStore, (state) => state)
@@ -41,7 +42,10 @@ export function Header() {
                 <LogoutButton />
               </>
             ) : (
-              <LoginForm />
+              <>
+                <LoginForm />
+                <SignupDialog />
+              </>
             )}
           </div>
         </div>
