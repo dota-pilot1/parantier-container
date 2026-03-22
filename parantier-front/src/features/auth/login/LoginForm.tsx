@@ -8,7 +8,7 @@ import { authApi } from '@/entities/user/api/authApi'
 
 export function LoginForm() {
   const [email, setEmail] = useState('terecal@daum.net')
-  const [password, setPassword] = useState('password123')
+  const [password, setPassword] = useState('password123!')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
