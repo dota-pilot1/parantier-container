@@ -15,4 +15,11 @@ export const authApi = {
   logout: async (): Promise<void> => {
     await apiClient.post('/auth/logout')
   },
+
+  checkEmailDuplicate: async (email: string): Promise<boolean> => {
+    const response = await apiClient.get<boolean>('/auth/check-email', {
+      params: { email },
+    })
+    return response.data
+  },
 }

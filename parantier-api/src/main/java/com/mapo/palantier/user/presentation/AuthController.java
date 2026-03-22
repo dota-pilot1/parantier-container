@@ -77,4 +77,11 @@ public class AuthController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "이메일 중복 체크", description = "회원가입 시 이메일 중복 여부를 확인합니다.")
+    @GetMapping("/check-email")
+    public ResponseEntity<Boolean> checkEmailDuplicate(@RequestParam String email) {
+        boolean isDuplicate = authService.isEmailDuplicate(email);
+        return ResponseEntity.ok(isDuplicate);
+    }
 }

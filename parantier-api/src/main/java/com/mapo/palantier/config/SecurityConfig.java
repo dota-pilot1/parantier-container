@@ -35,8 +35,8 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 // Swagger UI - 인증 없이 접근 가능 (개발 편의성)
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                // Auth endpoints - 회원가입/로그인은 인증 없이 접근 가능
-                .requestMatchers("/api/auth/signup", "/api/auth/login").permitAll()
+                // Auth endpoints - 회원가입/로그인/이메일 중복 체크는 인증 없이 접근 가능
+                .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/check-email").permitAll()
                 // 나머지 Actuator endpoints - 인증 필요
                 .requestMatchers("/actuator/**").authenticated()
                 // 나머지 API endpoints - 인증 필요

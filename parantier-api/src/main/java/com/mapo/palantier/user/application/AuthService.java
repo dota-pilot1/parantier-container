@@ -114,4 +114,9 @@ public class AuthService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(ErrorCode.USER_NOT_FOUND));
     }
+
+    @Transactional(readOnly = true)
+    public boolean isEmailDuplicate(String email) {
+        return userRepository.existsByEmail(email);
+    }
 }

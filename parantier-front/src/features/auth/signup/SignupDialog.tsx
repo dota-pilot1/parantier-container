@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { useForm } from '@tanstack/react-form'
+import { zodValidator } from '@tanstack/zod-form-adapter'
+import { Eye, EyeOff, Check, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -12,36 +14,67 @@ import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { authApi } from '@/entities/user/api/authApi'
+import { signupSchema, type SignupFormData } from '@/shared/lib/validation/auth.schema'
 
 export function SignupDialog() {
   const [open, setOpen] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [username, setUsername] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [emailCheckStatus, setEmailCheckStatus] = useState<'idle' | 'checking' | 'available' | 'duplicate'>('idle')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setIsLoading(true)
+  const form = useForm<SignupFormData>({
+    defaultValues: {
+      email: '',
+      username: '',
+      password: '',
+      passwordConfirm: '',
+    },
+    validatorAdapter: zodValidator(),
+    onSubmit: async ({ value }) => {
+      // 제출 시 검증
+      const result = signupSchema.safeParse(value)
+      if (!result.success) {
+        // 에러가 있으면 각 필드에 설정
+        result.error.errors.forEach((err) => {
+          const fieldName = err.path[0] as keyof SignupFormData
+          form.setFieldMeta(fieldName, (prev) => ({
+            ...prev,
+            errorMap: { onSubmit: err.message },
+          }))
+        })
+        return
+      }
+      try {
+        // passwordConfirm은 API에 보내지 않음
+        const { passwordConfirm, ...signupData } = value
+        await authApi.signup(signupData)
+        setSuccess(true)
+        setTimeout(() => {
+          setOpen(false)
+          form.reset()
+          setSuccess(false)
+          setEmailCheckStatus('idle')
+        }, 2000)
+      } catch (err: any) {
+        form.setErrorMap({
+          onSubmit: err.response?.data?.message || '회원가입에 실패했습니다.',
+        })
+      }
+    },
+  })
 
+  const handleEmailCheck = async () => {
+    const email = form.getFieldValue('email')
+    if (!email) {
+      return
+    }
+
+    setEmailCheckStatus('checking')
     try {
-      await authApi.signup({ email, password, username })
-      setSuccess(true)
-      setTimeout(() => {
-        setOpen(false)
-        setEmail('')
-        setPassword('')
-        setUsername('')
-        setSuccess(false)
-      }, 2000)
-    } catch (err: any) {
-      setError(err.response?.data?.message || '회원가입에 실패했습니다.')
-    } finally {
-      setIsLoading(false)
+      const isDuplicate = await authApi.checkEmailDuplicate(email)
+      setEmailCheckStatus(isDuplicate ? 'duplicate' : 'available')
+    } catch (err) {
+      setEmailCheckStatus('idle')
     }
   }
 
@@ -68,60 +101,185 @@ export function SignupDialog() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="signup-email">이메일</Label>
-              <Input
-                id="signup-email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              form.handleSubmit()
+            }}
+            className="space-y-4 pt-4"
+          >
+            <form.Field name="email">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">이메일</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={field.state.value}
+                        onChange={(e) => {
+                          field.handleChange(e.target.value)
+                          setEmailCheckStatus('idle')
+                        }}
+                        onBlur={field.handleBlur}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleEmailCheck}
+                      disabled={emailCheckStatus === 'checking' || !field.state.value}
+                      className="w-24"
+                    >
+                      {emailCheckStatus === 'checking' ? '확인 중...' : '중복 확인'}
+                    </Button>
+                  </div>
+                  {field.state.meta.errors.length > 0 && field.state.meta.errorMap?.onSubmit ? (
+                    <p className="text-sm text-destructive">
+                      {String(field.state.meta.errors[0])}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      이메일 형식으로 입력해주세요
+                    </p>
+                  )}
+                  {emailCheckStatus === 'available' && (
+                    <p className="text-sm text-green-600 flex items-center gap-1">
+                      <Check className="h-4 w-4" />
+                      사용 가능한 이메일입니다
+                    </p>
+                  )}
+                  {emailCheckStatus === 'duplicate' && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <X className="h-4 w-4" />
+                      이미 사용 중인 이메일입니다
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
 
-            <div className="space-y-2">
-              <Label htmlFor="signup-username">사용자 이름</Label>
-              <Input
-                id="signup-username"
-                type="text"
-                placeholder="홍길동"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            </div>
+            <form.Field name="username">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="signup-username">사용자 이름</Label>
+                  <Input
+                    id="signup-username"
+                    type="text"
+                    placeholder="홍길동"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.length > 0 && field.state.meta.errorMap?.onSubmit ? (
+                    <p className="text-sm text-destructive">
+                      {String(field.state.meta.errors[0])}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      2자 이상 50자 이하로 입력해주세요
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
 
-            <div className="space-y-2">
-              <Label htmlFor="signup-password">비밀번호</Label>
-              <div className="relative">
-                <Input
-                  id="signup-password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="비밀번호"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            <form.Field name="password">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">비밀번호</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="비밀번호"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {field.state.meta.errors.length > 0 && field.state.meta.errorMap?.onSubmit ? (
+                    <p className="text-sm text-destructive">
+                      {String(field.state.meta.errors[0])}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      8자 이상, 영문자, 숫자, 특수문자 포함
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="passwordConfirm">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password-confirm">비밀번호 확인</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-password-confirm"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="비밀번호 확인"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {field.state.meta.errors.length > 0 && field.state.meta.errorMap?.onSubmit ? (
+                    <p className="text-sm text-destructive">
+                      {String(field.state.meta.errors[0])}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      비밀번호를 다시 입력해주세요
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+
+            <form.Subscribe
+              selector={(state) => state.errorMap.onSubmit}
+            >
+              {(error) =>
+                error && (
+                  <p className="text-sm text-destructive">{error}</p>
+                )
+              }
+            </form.Subscribe>
+
+            <form.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+            >
+              {([canSubmit, isSubmitting]) => (
+                <Button
+                  type="submit"
+                  disabled={!canSubmit || isSubmitting || emailCheckStatus !== 'available'}
+                  className="w-full"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? '가입 중...' : '회원가입'}
-            </Button>
+                  {isSubmitting ? '가입 중...' : '회원가입'}
+                </Button>
+              )}
+            </form.Subscribe>
           </form>
         )}
       </DialogContent>
