@@ -17,18 +17,10 @@ export function Header() {
               <a href="/" className="text-sm font-medium hover:text-primary transition-colors">
                 홈
               </a>
-              {auth.isAuthenticated && (
-                <>
-                  <a href="/projects" className="text-sm font-medium hover:text-primary transition-colors">
-                    프로젝트
-                  </a>
-                  <a href="/docs" className="text-sm font-medium hover:text-primary transition-colors">
-                    문서
-                  </a>
-                  <a href="/shop" className="text-sm font-medium hover:text-primary transition-colors">
-                    쇼핑몰
-                  </a>
-                </>
+              {auth.isAuthenticated && auth.user?.role === 'ROLE_ADMIN' && (
+                <a href="/admin/users" className="text-sm font-medium hover:text-primary transition-colors">
+                  유저관리
+                </a>
               )}
             </nav>
           </div>

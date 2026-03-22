@@ -1,14 +1,73 @@
 import { Header } from '@/widgets/header/Header'
 import { MainPage } from '@/pages/main/MainPage'
+import { UsersPage } from '@/pages/admin/users/UsersPage'
+import { useStore } from '@tanstack/react-store'
+import { authStore, authActions } from '@/entities/user/model/authStore'
+import { useEffect, useState } from 'react'
+import { Toaster } from 'sonner'
+import { QueryProvider } from '@/app/providers/QueryProvider'
 
 function App() {
+  const [currentPath, setCurrentPath] = useState(window.location.pathname)
+  const auth = useStore(authStore, (state) => state)
+
+  // 앱 로드 시 로그인 상태 복원
+  useEffect(() => {
+    authActions.restoreAuth()
+  }, [])
+
+  useEffect(() => {
+    const handleNavigation = () => {
+      setCurrentPath(window.location.pathname)
+    }
+
+    window.addEventListener('popstate', handleNavigation)
+
+    // Listen for clicks on links
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement
+      if (target.tagName === 'A' && target.getAttribute('href')?.startsWith('/')) {
+        e.preventDefault()
+        const href = target.getAttribute('href')!
+        window.history.pushState({}, '', href)
+        setCurrentPath(href)
+      }
+    })
+
+    return () => {
+      window.removeEventListener('popstate', handleNavigation)
+    }
+  }, [])
+
+  const renderPage = () => {
+    if (currentPath === '/admin/users') {
+      if (auth.user?.role === 'ROLE_ADMIN') {
+        return <UsersPage />
+      } else {
+        return (
+          <div className="flex items-center justify-center min-h-screen">
+            <p className="text-lg text-destructive">접근 권한이 없습니다.</p>
+          </div>
+        )
+      }
+    }
+
+    return <MainPage />
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main>
-        <MainPage />
-      </main>
-    </div>
+    <QueryProvider>
+      <div className="min-h-screen bg-background">
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          duration={2000}
+        />
+        <Header />
+        <main>{renderPage()}</main>
+      </div>
+    </QueryProvider>
   )
 }
 

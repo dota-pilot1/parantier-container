@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/axios'
-import type { LoginRequest, LoginResponse, SignupRequest } from '@/shared/types/auth'
+import type { LoginRequest, LoginResponse, SignupRequest, User } from '@/shared/types/auth'
 
 export const authApi = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
@@ -20,6 +20,11 @@ export const authApi = {
     const response = await apiClient.get<boolean>('/auth/check-email', {
       params: { email },
     })
+    return response.data
+  },
+
+  getCurrentUser: async (): Promise<User> => {
+    const response = await apiClient.get<User>('/auth/me')
     return response.data
   },
 }

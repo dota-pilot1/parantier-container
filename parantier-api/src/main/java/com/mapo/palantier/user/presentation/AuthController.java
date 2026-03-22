@@ -9,12 +9,14 @@ import com.mapo.palantier.user.presentation.dto.RefreshTokenRequest;
 import com.mapo.palantier.user.presentation.dto.SignupRequest;
 import com.mapo.palantier.user.presentation.dto.SignupResponse;
 import com.mapo.palantier.user.presentation.dto.TokenResponse;
+import com.mapo.palantier.user.presentation.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -70,9 +72,10 @@ public class AuthController {
 
     @Operation(summary = "로그아웃", description = "리프레시 토큰을 무효화하여 로그아웃합니다.")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<Void> logout(Authentication authentication) {
         // 현재 인증된 사용자 조회 후 로그아웃
-        User user = authService.getUserByEmail(userDetails.getUsername());
+        String email = authentication.getName();
+        User user = authService.getUserByEmail(email);
         authService.logout(user.getId());
 
         return ResponseEntity.noContent().build();
@@ -83,5 +86,13 @@ public class AuthController {
     public ResponseEntity<Boolean> checkEmailDuplicate(@RequestParam String email) {
         boolean isDuplicate = authService.isEmailDuplicate(email);
         return ResponseEntity.ok(isDuplicate);
+    }
+
+    @Operation(summary = "현재 사용자 정보 조회", description = "JWT 토큰으로 인증된 현재 사용자의 정보를 조회합니다.")
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+        String email = authentication.getName();
+        User user = authService.getUserByEmail(email);
+        return ResponseEntity.ok(UserResponse.from(user));
     }
 }

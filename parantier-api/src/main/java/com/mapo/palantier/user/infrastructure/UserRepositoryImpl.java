@@ -2,9 +2,11 @@ package com.mapo.palantier.user.infrastructure;
 
 import com.mapo.palantier.user.domain.User;
 import com.mapo.palantier.user.domain.UserRepository;
+import com.mapo.palantier.user.domain.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -31,5 +33,15 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         return userMapper.existsByEmail(email);
+    }
+
+    @Override
+    public List<User> findAll() {
+        return userMapper.findAll();
+    }
+
+    @Override
+    public void updateRole(Long id, UserRole role) {
+        userMapper.updateRole(id, role);
     }
 }

@@ -1,5 +1,6 @@
 import { Store } from '@tanstack/react-store'
 import type { AuthState, User } from '@/shared/types/auth'
+import { authApi } from '@/entities/user/api/authApi'
 
 // 초기 상태
 const initialState: AuthState = {
@@ -54,5 +55,28 @@ export const authActions = {
       user,
       isAuthenticated: true,
     }))
+  },
+
+  restoreAuth: async () => {
+    const accessToken = localStorage.getItem('accessToken')
+    const refreshToken = localStorage.getItem('refreshToken')
+
+    if (!accessToken || !refreshToken) {
+      return
+    }
+
+    try {
+      const user = await authApi.getCurrentUser()
+      authStore.setState((state) => ({
+        ...state,
+        user,
+        accessToken,
+        refreshToken,
+        isAuthenticated: true,
+      }))
+    } catch (error) {
+      // 토큰이 유효하지 않으면 로그아웃
+      authActions.logout()
+    }
   },
 }
