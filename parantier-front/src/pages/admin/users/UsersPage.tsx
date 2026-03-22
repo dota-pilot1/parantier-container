@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { type UserResponse } from '@/entities/user/api/adminApi'
 import { AgGridReact } from 'ag-grid-react'
-import type { ColDef, ICellRendererParams } from 'ag-grid-community'
+import type { ColDef, ICellRendererParams, SelectionChangedEvent } from 'ag-grid-community'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { Button } from '@/shared/ui/button'
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/shared/ui/select'
 import { useUsers } from '@/features/admin/hooks/useUsers'
 import { useUpdateUserRole } from '@/features/admin/hooks/useUpdateUserRole'
+import { toast } from 'sonner'
 
 // AG-Grid 모듈 등록
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -81,7 +82,32 @@ function StatusCellRenderer(props: ICellRendererParams<UserResponse>) {
 }
 
 export function UsersPage() {
+  const gridRef = useRef<AgGridReact>(null)
   const { data: users = [], isLoading, isError, error, refetch } = useUsers()
+  const [selectedCount, setSelectedCount] = useState(0)
+
+  // 선택 변경 이벤트 핸들러
+  const handleSelectionChanged = (event: SelectionChangedEvent) => {
+    const selectedRows = event.api.getSelectedRows()
+    setSelectedCount(selectedRows.length)
+  }
+
+  // 일괄 삭제 핸들러 (예시)
+  const handleBulkDelete = () => {
+    const selectedRows = gridRef.current?.api.getSelectedRows()
+    if (!selectedRows || selectedRows.length === 0) {
+      toast.error('삭제할 사용자를 선택해주세요.')
+      return
+    }
+
+    if (!confirm(`${selectedRows.length}명의 사용자를 삭제하시겠습니까?`)) {
+      return
+    }
+
+    // TODO: 실제 삭제 API 호출
+    toast.success(`${selectedRows.length}명의 사용자를 삭제했습니다.`)
+    gridRef.current?.api.deselectAll()
+  }
 
   // AG-Grid 컬럼 정의
   const columnDefs = useMemo<ColDef<UserResponse>[]>(
@@ -89,6 +115,8 @@ export function UsersPage() {
       {
         headerName: 'ID',
         field: 'id',
+        checkboxSelection: true,
+        headerCheckboxSelection: true,
         width: 90,
         filter: 'agNumberColumnFilter',
         sortable: true,
@@ -184,8 +212,20 @@ export function UsersPage() {
         </p>
       </div>
 
+      {/* 일괄 작업 버튼 */}
+      <div className="mb-4 flex gap-2">
+        <Button
+          variant="destructive"
+          onClick={handleBulkDelete}
+          disabled={selectedCount === 0}
+        >
+          선택 삭제 ({selectedCount})
+        </Button>
+      </div>
+
       <div style={{ height: '650px', width: '100%' }}>
         <AgGridReact<UserResponse>
+          ref={gridRef}
           rowData={users}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
@@ -193,7 +233,9 @@ export function UsersPage() {
           paginationPageSize={20}
           paginationPageSizeSelector={[10, 20, 50, 100]}
           animateRows={true}
-          rowSelection={{ mode: 'singleRow' }}
+          rowSelection="multiple"
+          onSelectionChanged={handleSelectionChanged}
+          suppressRowClickSelection={true}
           suppressCellFocus={true}
           theme={themeQuartz.withParams({
             headerHeight: 52,
