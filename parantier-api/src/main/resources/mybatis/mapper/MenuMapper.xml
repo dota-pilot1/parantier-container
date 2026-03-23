@@ -40,9 +40,18 @@
             SELECT m.* FROM menus m
             INNER JOIN menu_tree mt ON m.parent_id = mt.id
             WHERE m.is_active = true
+        ),
+        -- 현재 권한이 접근 가능한 모든 하위 권한 (재귀 CTE)
+        accessible_roles AS (
+            SELECT CAST(#{role} AS VARCHAR(50)) as role
+            UNION ALL
+            SELECT rh.child_role
+            FROM role_hierarchy rh
+            INNER JOIN accessible_roles ar ON rh.parent_role = ar.role
         )
         SELECT * FROM menu_tree
-        WHERE required_role IS NULL OR required_role = #{role}
+        WHERE required_role IS NULL
+           OR required_role IN (SELECT role FROM accessible_roles)
         ORDER BY parent_id NULLS FIRST, order_num
     </select>
 

@@ -2,6 +2,7 @@ export interface User {
   email: string
   username: string
   role: string
+  roles: string[] // 접근 가능한 권한 배열 (권한 계층 포함)
 }
 
 export interface AuthState {

@@ -26,6 +26,9 @@ export function TreeView({
   onInlineSubmit,
   onInlineCancel,
 }: TreeViewProps) {
+  // 디버깅: 백엔드에서 받은 메뉴 구조 확인
+  console.log('TreeView received menus:', JSON.stringify(menus, null, 2))
+
   // 모든 메뉴를 평탄화 (재귀적으로 children 포함)
   const flattenMenus = (menuList: Menu[]): Menu[] => {
     const result: Menu[] = []

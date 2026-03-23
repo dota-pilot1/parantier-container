@@ -518,6 +518,18 @@ export function MenusPage() {
           onCancel={handleCancelDelete}
         />
       )}
+
+      {/* 트리 구조 확인 */}
+      {menus.length > 0 && (
+        <div className="mt-6 rounded-lg border bg-card p-4">
+          <h3 className="font-semibold mb-2 text-sm text-gray-600">
+            트리 구조 확인 (Tree Structure Check)
+          </h3>
+          <pre className="text-xs bg-gray-50 p-4 rounded overflow-auto max-h-96">
+            {JSON.stringify(menus, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   )
 }

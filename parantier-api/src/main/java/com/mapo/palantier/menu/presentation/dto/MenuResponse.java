@@ -58,6 +58,9 @@ public class MenuResponse {
                 .icon(menu.getIcon())
                 .isActive(menu.getIsActive())
                 .createdAt(menu.getCreatedAt())
+                .children(menu.getChildren() != null && !menu.getChildren().isEmpty()
+                        ? fromList(menu.getChildren())
+                        : null)
                 .build();
     }
 

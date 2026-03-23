@@ -86,6 +86,19 @@ export function UsersPage() {
   const { data: users = [], isLoading, isError, error, refetch } = useUsers()
   const [selectedCount, setSelectedCount] = useState(0)
 
+  // AG-Grid 한국어 로케일 설정
+  const localeText = useMemo(() => ({
+    // 페이지네이션
+    page: '페이지',
+    of: '/',
+    to: '-',
+    more: '더보기',
+    // 페이지 사이즈
+    pageSizeSelectorLabel: '페이지당',
+    // 간결하게: "1-2 / 전체 2"
+    pageSizeSelectorLabelText: '행',
+  }), [])
+
   // 선택 변경 이벤트 핸들러
   const handleSelectionChanged = (event: SelectionChangedEvent) => {
     const selectedRows = event.api.getSelectedRows()
@@ -244,6 +257,7 @@ export function UsersPage() {
           suppressRowClickSelection={true}
           suppressCellFocus={true}
           suppressPaginationPanel={false}
+          localeText={localeText}
           theme={themeQuartz.withParams({
             headerHeight: 52,
             rowHeight: 60,

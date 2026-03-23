@@ -2,7 +2,7 @@ import { api } from '@/shared/api/client'
 import type { Menu, CreateMenuRequest } from '@/types/menu'
 
 export const menuApi = {
-  // 메뉴 트리 조회 (현재 사용자 권한에 맞는 메뉴)
+  // 메뉴 트리 조회 (현재 사용자 권한에 맞는 메뉴, 백엔드에서 트리 구조로 반환)
   getMenuTree: (): Promise<Menu[]> => {
     return api.get('/menus/tree').then((res) => res.data)
   },

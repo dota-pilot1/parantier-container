@@ -1,13 +1,17 @@
 import { Store } from '@tanstack/react-store'
 import type { AuthState, User } from '@/shared/types/auth'
 import { authApi } from '@/entities/user/api/authApi'
+import { getRolesFromToken } from '@/shared/lib/jwt'
 
 // 초기 상태
+const accessToken = localStorage.getItem('accessToken')
+const refreshToken = localStorage.getItem('refreshToken')
+
 const initialState: AuthState = {
   user: null,
-  accessToken: localStorage.getItem('accessToken'),
-  refreshToken: localStorage.getItem('refreshToken'),
-  isAuthenticated: false,
+  accessToken,
+  refreshToken,
+  isAuthenticated: !!(accessToken && refreshToken), // 토큰이 둘 다 있으면 인증된 것으로 간주
 }
 
 // 인증 스토어 생성
@@ -67,9 +71,13 @@ export const authActions = {
 
     try {
       const user = await authApi.getCurrentUser()
+
+      // JWT에서 roles 배열 추출
+      const roles = getRolesFromToken(accessToken)
+
       authStore.setState((state) => ({
         ...state,
-        user,
+        user: { ...user, roles },
         accessToken,
         refreshToken,
         isAuthenticated: true,

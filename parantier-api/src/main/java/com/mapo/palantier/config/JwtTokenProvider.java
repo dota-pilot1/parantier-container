@@ -1,8 +1,10 @@
 package com.mapo.palantier.config;
 
+import com.mapo.palantier.role.application.RoleHierarchyService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class JwtTokenProvider {
@@ -18,15 +21,18 @@ public class JwtTokenProvider {
     private final SecretKey secretKey;
     private final long accessTokenExpiration;
     private final long refreshTokenExpiration;
+    private final RoleHierarchyService roleHierarchyService;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
-            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration
+            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration,
+            RoleHierarchyService roleHierarchyService
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
+        this.roleHierarchyService = roleHierarchyService;
     }
 
     /**
@@ -36,9 +42,13 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
 
+        // 권한 계층 조회 - 현재 권한으로 접근 가능한 모든 권한 배열
+        List<String> accessibleRoles = roleHierarchyService.getAccessibleRoles(role);
+
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
+                .claim("roles", accessibleRoles)
                 .claim("type", "ACCESS")
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -95,6 +105,20 @@ public class JwtTokenProvider {
                 .getPayload();
 
         return claims.get("role", String.class);
+    }
+
+    /**
+     * JWT 토큰에서 접근 가능한 권한 배열 추출
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getRolesFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.get("roles", List.class);
     }
 
     /**

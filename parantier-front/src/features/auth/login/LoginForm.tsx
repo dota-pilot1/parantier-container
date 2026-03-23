@@ -6,6 +6,7 @@ import { Label } from '@/shared/ui/label'
 import { authActions } from '@/entities/user/model/authStore'
 import { authApi } from '@/entities/user/api/authApi'
 import { useQueryClient } from '@tanstack/react-query'
+import { getRolesFromToken } from '@/shared/lib/jwt'
 
 export function LoginForm() {
   const queryClient = useQueryClient()
@@ -23,10 +24,14 @@ export function LoginForm() {
     try {
       const response = await authApi.login({ email, password })
 
+      // JWT에서 roles 배열 추출
+      const roles = getRolesFromToken(response.accessToken)
+
       authActions.login(response.accessToken, response.refreshToken, {
         email: response.email,
         username: response.username,
         role: response.role,
+        roles,
       })
 
       // 로그인 성공 시 메뉴 쿼리 무효화 (권한에 따라 다른 메뉴를 보여주기 위함)
