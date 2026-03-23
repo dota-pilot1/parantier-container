@@ -23,7 +23,11 @@
     <select id="findAllByRole" resultMap="MenuResultMap">
         SELECT * FROM menus
         WHERE is_active = true
-          AND (required_role IS NULL OR required_role = #{role})
+          AND (
+            required_role IS NULL
+            OR required_role = #{role}
+            OR (#{role} = 'ADMIN' AND required_role = 'USER')
+          )
         ORDER BY parent_id NULLS FIRST, order_num
     </select>
 
@@ -42,7 +46,11 @@
             WHERE m.is_active = true
         )
         SELECT * FROM menu_tree
-        WHERE required_role IS NULL OR required_role = #{role}
+        WHERE (
+            required_role IS NULL
+            OR required_role = #{role}
+            OR (#{role} = 'ADMIN' AND required_role = 'USER')
+        )
         ORDER BY parent_id NULLS FIRST, order_num
     </select>
 
@@ -51,7 +59,11 @@
         SELECT * FROM menus
         WHERE parent_id = #{parentId}
           AND is_active = true
-          AND (required_role IS NULL OR required_role = #{role})
+          AND (
+            required_role IS NULL
+            OR required_role = #{role}
+            OR (#{role} = 'ADMIN' AND required_role = 'USER')
+          )
         ORDER BY order_num
     </select>
 
