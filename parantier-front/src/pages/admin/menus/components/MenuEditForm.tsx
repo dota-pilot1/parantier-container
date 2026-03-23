@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Menu, MenuType } from '@/types/menu'
 import { Button } from '@/shared/ui/button'
 
@@ -22,6 +22,21 @@ export function MenuEditForm({ menu, parentMenu, onSave, onDelete, onCancel }: M
       parentId: parentMenu?.id || null,
     }
   )
+
+  // menu나 parentMenu가 변경되면 formData 초기화
+  useEffect(() => {
+    setFormData(
+      menu || {
+        name: '',
+        path: '',
+        menuType: 'SIDE' as MenuType,
+        requiredRole: null,
+        orderNum: 0,
+        isActive: true,
+        parentId: parentMenu?.id || null,
+      }
+    )
+  }, [menu, parentMenu])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

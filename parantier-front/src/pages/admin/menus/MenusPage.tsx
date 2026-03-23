@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useMenuTree } from '@/features/menu/hooks/useMenuTree'
+import { menuApi } from '@/entities/menu/api/menuApi'
 import { Button } from '@/shared/ui/button'
-import type { Menu } from '@/types/menu'
+import type { Menu, CreateMenuRequest } from '@/types/menu'
 import { TreeView } from './components/TreeView'
 import { MenuEditForm } from './components/MenuEditForm'
 import { ContextMenu } from './components/ContextMenu'
 
 export function MenusPage() {
+  const queryClient = useQueryClient()
   const { data: menus = [], isLoading } = useMenuTree()
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
@@ -17,6 +21,49 @@ export function MenusPage() {
     y: number
     menu: Menu
   } | null>(null)
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: (data: CreateMenuRequest) => menuApi.createMenu(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menus', 'tree'] })
+      toast.success('메뉴가 추가되었습니다')
+      setIsCreating(false)
+      setSelectedMenu(null)
+      setParentMenu(null)
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || '메뉴 추가에 실패했습니다')
+    },
+  })
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateMenuRequest }) =>
+      menuApi.updateMenu(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menus', 'tree'] })
+      toast.success('메뉴가 수정되었습니다')
+      setSelectedMenu(null)
+      setParentMenu(null)
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || '메뉴 수정에 실패했습니다')
+    },
+  })
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => menuApi.deleteMenu(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menus', 'tree'] })
+      toast.success('메뉴가 삭제되었습니다')
+      setSelectedMenu(null)
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || '메뉴 삭제에 실패했습니다')
+    },
+  })
 
   // 확장/축소 토글
   const handleToggle = (id: number) => {
@@ -43,17 +90,31 @@ export function MenusPage() {
     setIsCreating(true)
   }
 
-  // 저장 처리 (TODO: API 연동)
+  // 저장 처리
   const handleSave = (menuData: Partial<Menu>) => {
-    console.log('Save menu:', menuData)
-    // TODO: API 호출
+    const requestData: CreateMenuRequest = {
+      name: menuData.name!,
+      path: menuData.path || undefined,
+      parentId: menuData.parentId || undefined,
+      menuType: menuData.menuType!,
+      orderNum: menuData.orderNum,
+      requiredRole: menuData.requiredRole || undefined,
+      icon: menuData.icon || undefined,
+    }
+
+    if (menuData.id) {
+      // 수정
+      updateMutation.mutate({ id: menuData.id, data: requestData })
+    } else {
+      // 생성
+      createMutation.mutate(requestData)
+    }
   }
 
-  // 삭제 처리 (TODO: API 연동)
+  // 삭제 처리
   const handleDelete = (id: number) => {
     if (confirm('정말 삭제하시겠습니까?')) {
-      console.log('Delete menu:', id)
-      // TODO: API 호출
+      deleteMutation.mutate(id)
     }
   }
 
