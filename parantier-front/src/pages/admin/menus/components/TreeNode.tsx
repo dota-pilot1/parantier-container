@@ -1,4 +1,5 @@
 import type { Menu } from '@/types/menu'
+import { InlineMenuInput } from './InlineMenuInput'
 
 interface TreeNodeProps {
   menu: Menu
@@ -6,9 +7,12 @@ interface TreeNodeProps {
   allMenus: Menu[]
   expandedIds: Set<number>
   selectedId: number | null
+  addingChildToId: number | null
   onSelect: (menu: Menu) => void
   onToggle: (id: number) => void
   onContextMenu: (x: number, y: number, menu: Menu) => void
+  onInlineSubmit: (parentId: number, name: string) => void
+  onInlineCancel: () => void
 }
 
 export function TreeNode({
@@ -17,9 +21,12 @@ export function TreeNode({
   allMenus,
   expandedIds,
   selectedId,
+  addingChildToId,
   onSelect,
   onToggle,
   onContextMenu,
+  onInlineSubmit,
+  onInlineCancel,
 }: TreeNodeProps) {
   const children = allMenus.filter((m) => m.parentId === menu.id)
   const hasChildren = children.length > 0
@@ -85,12 +92,24 @@ export function TreeNode({
               allMenus={allMenus}
               expandedIds={expandedIds}
               selectedId={selectedId}
+              addingChildToId={addingChildToId}
               onSelect={onSelect}
               onToggle={onToggle}
               onContextMenu={onContextMenu}
+              onInlineSubmit={onInlineSubmit}
+              onInlineCancel={onInlineCancel}
             />
           ))}
         </div>
+      )}
+
+      {/* 인라인 입력 (하위 메뉴 추가) */}
+      {isExpanded && addingChildToId === menu.id && (
+        <InlineMenuInput
+          depth={depth + 1}
+          onSubmit={(name) => onInlineSubmit(menu.id, name)}
+          onCancel={onInlineCancel}
+        />
       )}
     </div>
   )

@@ -16,6 +16,7 @@ export function MenusPage() {
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [parentMenu, setParentMenu] = useState<Menu | null>(null)
+  const [addingChildToId, setAddingChildToId] = useState<number | null>(null)
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -154,15 +155,39 @@ export function MenusPage() {
     setContextMenu(null)
   }
 
-  // 하위 메뉴 추가
+  // 하위 메뉴 추가 (인라인 입력 모드)
   const handleAddChildMenu = () => {
     if (contextMenu) {
-      setParentMenu(contextMenu.menu)
-      setSelectedMenu(null)
-      setIsCreating(true)
       // 부모 메뉴 자동 확장
       setExpandedIds((prev) => new Set(prev).add(contextMenu.menu.id))
+      // 인라인 입력 모드 활성화
+      setAddingChildToId(contextMenu.menu.id)
     }
+  }
+
+  // 인라인 입력에서 메뉴 이름 제출
+  const handleInlineSubmit = (parentId: number, name: string) => {
+    const requestData: CreateMenuRequest = {
+      name,
+      parentId,
+      menuType: 'SUB', // 기본값: 하위 메뉴는 SUB 타입
+      orderNum: 0,
+    }
+
+    createMutation.mutate(requestData, {
+      onSuccess: (newMenu) => {
+        // 생성된 메뉴 자동 선택 (상세 편집 가능)
+        setSelectedMenu(newMenu)
+        setIsCreating(false)
+        setParentMenu(null)
+        setAddingChildToId(null)
+      },
+    })
+  }
+
+  // 인라인 입력 취소
+  const handleInlineCancel = () => {
+    setAddingChildToId(null)
   }
 
   // 컨텍스트 메뉴에서 편집
@@ -253,9 +278,12 @@ export function MenusPage() {
                 menus={menus}
                 expandedIds={expandedIds}
                 selectedId={selectedMenu?.id || null}
+                addingChildToId={addingChildToId}
                 onSelect={handleSelect}
                 onToggle={handleToggle}
                 onContextMenu={handleContextMenu}
+                onInlineSubmit={handleInlineSubmit}
+                onInlineCancel={handleInlineCancel}
               />
             </div>
           </div>

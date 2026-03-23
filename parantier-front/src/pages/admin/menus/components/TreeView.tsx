@@ -5,18 +5,24 @@ interface TreeViewProps {
   menus: Menu[]
   expandedIds: Set<number>
   selectedId: number | null
+  addingChildToId: number | null
   onSelect: (menu: Menu) => void
   onToggle: (id: number) => void
   onContextMenu: (x: number, y: number, menu: Menu) => void
+  onInlineSubmit: (parentId: number, name: string) => void
+  onInlineCancel: () => void
 }
 
 export function TreeView({
   menus,
   expandedIds,
   selectedId,
+  addingChildToId,
   onSelect,
   onToggle,
   onContextMenu,
+  onInlineSubmit,
+  onInlineCancel,
 }: TreeViewProps) {
   // 모든 메뉴를 평탄화 (재귀적으로 children 포함)
   const flattenMenus = (menuList: Menu[]): Menu[] => {
@@ -45,9 +51,12 @@ export function TreeView({
           allMenus={allMenus}
           expandedIds={expandedIds}
           selectedId={selectedId}
+          addingChildToId={addingChildToId}
           onSelect={onSelect}
           onToggle={onToggle}
           onContextMenu={onContextMenu}
+          onInlineSubmit={onInlineSubmit}
+          onInlineCancel={onInlineCancel}
         />
       ))}
     </div>
