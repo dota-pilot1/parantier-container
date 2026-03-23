@@ -1,15 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMenuTree } from '@/features/menu/hooks/useMenuTree'
 import { Button } from '@/shared/ui/button'
 import type { Menu } from '@/types/menu'
 import { TreeView } from './components/TreeView'
 import { MenuEditForm } from './components/MenuEditForm'
+import { ContextMenu } from './components/ContextMenu'
 
 export function MenusPage() {
   const { data: menus = [], isLoading } = useMenuTree()
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [parentMenu, setParentMenu] = useState<Menu | null>(null)
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    menu: Menu
+  } | null>(null)
 
   // 확장/축소 토글
   const handleToggle = (id: number) => {
@@ -76,6 +83,61 @@ export function MenusPage() {
     setExpandedIds(new Set())
   }
 
+  // 컨텍스트 메뉴 열기
+  const handleContextMenu = (x: number, y: number, menu: Menu) => {
+    setContextMenu({ x, y, menu })
+  }
+
+  // 컨텍스트 메뉴 닫기
+  const closeContextMenu = () => {
+    setContextMenu(null)
+  }
+
+  // 하위 메뉴 추가
+  const handleAddChildMenu = () => {
+    if (contextMenu) {
+      setParentMenu(contextMenu.menu)
+      setSelectedMenu(null)
+      setIsCreating(true)
+      // 부모 메뉴 자동 확장
+      setExpandedIds((prev) => new Set(prev).add(contextMenu.menu.id))
+    }
+  }
+
+  // 컨텍스트 메뉴에서 편집
+  const handleEditFromContext = () => {
+    if (contextMenu) {
+      setSelectedMenu(contextMenu.menu)
+      setIsCreating(false)
+      setParentMenu(null)
+    }
+  }
+
+  // 컨텍스트 메뉴에서 삭제
+  const handleDeleteFromContext = () => {
+    if (contextMenu) {
+      handleDelete(contextMenu.menu.id)
+    }
+  }
+
+  // Outside click & ESC 키 감지
+  useEffect(() => {
+    if (!contextMenu) return
+
+    const handleClickOutside = () => closeContextMenu()
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeContextMenu()
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [contextMenu])
+
   return (
     <div className="p-8">
       <div className="mb-6">
@@ -132,15 +194,29 @@ export function MenusPage() {
                 selectedId={selectedMenu?.id || null}
                 onSelect={handleSelect}
                 onToggle={handleToggle}
+                onContextMenu={handleContextMenu}
               />
             </div>
           </div>
+
+          {/* 컨텍스트 메뉴 */}
+          {contextMenu && (
+            <ContextMenu
+              x={contextMenu.x}
+              y={contextMenu.y}
+              onClose={closeContextMenu}
+              onAddChild={handleAddChildMenu}
+              onEdit={handleEditFromContext}
+              onDelete={handleDeleteFromContext}
+            />
+          )}
 
           {/* 오른쪽: 상세 편집 */}
           <div className="rounded-lg border bg-card p-6">
             {selectedMenu || isCreating ? (
               <MenuEditForm
                 menu={selectedMenu}
+                parentMenu={parentMenu}
                 onSave={handleSave}
                 onDelete={handleDelete}
                 onCancel={handleCancel}

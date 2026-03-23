@@ -8,6 +8,7 @@ interface TreeNodeProps {
   selectedId: number | null
   onSelect: (menu: Menu) => void
   onToggle: (id: number) => void
+  onContextMenu: (x: number, y: number, menu: Menu) => void
 }
 
 export function TreeNode({
@@ -18,11 +19,18 @@ export function TreeNode({
   selectedId,
   onSelect,
   onToggle,
+  onContextMenu,
 }: TreeNodeProps) {
   const children = allMenus.filter((m) => m.parentId === menu.id)
   const hasChildren = children.length > 0
   const isExpanded = expandedIds.has(menu.id)
   const isSelected = menu.id === selectedId
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onContextMenu(e.clientX, e.clientY, menu)
+  }
 
   return (
     <div>
@@ -32,6 +40,7 @@ export function TreeNode({
         }`}
         style={{ paddingLeft: `${depth * 20 + 12}px` }}
         onClick={() => onSelect(menu)}
+        onContextMenu={handleContextMenu}
       >
         {/* 확장/축소 토글 */}
         {hasChildren && (
@@ -78,6 +87,7 @@ export function TreeNode({
               selectedId={selectedId}
               onSelect={onSelect}
               onToggle={onToggle}
+              onContextMenu={onContextMenu}
             />
           ))}
         </div>

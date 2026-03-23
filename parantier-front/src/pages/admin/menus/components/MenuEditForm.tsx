@@ -4,12 +4,13 @@ import { Button } from '@/shared/ui/button'
 
 interface MenuEditFormProps {
   menu: Menu | null
+  parentMenu?: Menu | null
   onSave: (menuData: Partial<Menu>) => void
   onDelete: (id: number) => void
   onCancel: () => void
 }
 
-export function MenuEditForm({ menu, onSave, onDelete, onCancel }: MenuEditFormProps) {
+export function MenuEditForm({ menu, parentMenu, onSave, onDelete, onCancel }: MenuEditFormProps) {
   const [formData, setFormData] = useState<Partial<Menu>>(
     menu || {
       name: '',
@@ -18,7 +19,7 @@ export function MenuEditForm({ menu, onSave, onDelete, onCancel }: MenuEditFormP
       requiredRole: null,
       orderNum: 0,
       isActive: true,
-      parentId: null,
+      parentId: parentMenu?.id || null,
     }
   )
 
@@ -43,6 +44,13 @@ export function MenuEditForm({ menu, onSave, onDelete, onCancel }: MenuEditFormP
         <p className="text-sm text-gray-500 mt-1">
           메뉴 정보를 입력하고 저장하세요.
         </p>
+        {parentMenu && (
+          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm text-blue-700">
+              <span className="font-medium">부모 메뉴:</span> {parentMenu.name}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 메뉴명 */}
