@@ -21,10 +21,7 @@ public class AuthorityService {
      * 예: ROLE_ADMIN → [MENU:ADMIN:READ, MENU:ADMIN:WRITE, PROJECT:CREATE, ...]
      */
     public List<String> getAuthoritiesByRole(String role) {
-        log.info("🔍 getAuthoritiesByRole called with role: {}", role);
-        List<String> authorities = authorityRepository.findAuthorityNamesByRole(role);
-        log.info("✅ getAuthoritiesByRole result: {}", authorities);
-        return authorities;
+        return authorityRepository.findAuthorityNamesByRole(role);
     }
 
     /**

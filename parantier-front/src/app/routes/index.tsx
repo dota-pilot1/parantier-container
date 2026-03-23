@@ -15,37 +15,34 @@ import { authStore } from '@/entities/user/model/authStore'
 import { toast } from 'sonner'
 
 // 권한 체크 헬퍼 (최소한의 프론트 체크)
-const requireAuth = (requiredRole?: string) => {
+const requireAuth = () => {
   const auth = authStore.state
 
-  console.log('requireAuth - auth:', auth)
-  console.log('requireAuth - requiredRole:', requiredRole)
+  if (!auth.isAuthenticated) {
+    toast.error('로그인이 필요합니다')
+    throw redirect({ to: '/dashboard' })
+  }
+}
+
+// Authority 기반 권한 체크
+const requireAuthority = (requiredAuthority: string) => {
+  const auth = authStore.state
 
   if (!auth.isAuthenticated) {
     toast.error('로그인이 필요합니다')
     throw redirect({ to: '/dashboard' })
   }
 
-  // requiredRole이 없으면 인증만 체크
-  if (!requiredRole) {
-    return
-  }
+  // JWT에서 추출한 authorities 배열로 권한 체크
+  const userAuthorities = auth.user?.authorities || []
 
-  // JWT에서 추출한 roles 배열로 권한 체크
-  const userRoles = auth.user?.roles || []
-  console.log('requireAuth - user.role:', auth.user?.role)
-  console.log('requireAuth - user.roles:', userRoles)
-
-  // roles 배열에 requiredRole이 포함되어 있으면 접근 허용
-  if (userRoles.includes(requiredRole)) {
-    console.log('requireAuth - 접근 허용')
+  if (userAuthorities.includes(requiredAuthority)) {
     return
   }
 
   // 권한이 없으면 접근 차단
-  console.log('requireAuth - 접근 차단')
   toast.error('접근 권한이 없습니다', {
-    description: `${requiredRole} 권한이 필요합니다.`,
+    description: `${requiredAuthority} 권한이 필요합니다.`,
   })
   throw redirect({ to: '/dashboard' })
 }
@@ -82,7 +79,7 @@ const dashboardAliasRoute = createRoute({
 const adminUsersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/users',
-  beforeLoad: () => requireAuth('ROLE_ADMIN'),
+  beforeLoad: () => requireAuthority('USER:READ'),
   component: UsersPage,
 })
 
@@ -90,7 +87,7 @@ const adminUsersRoute = createRoute({
 const adminMenusRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/menus',
-  beforeLoad: () => requireAuth('ROLE_ADMIN'),
+  beforeLoad: () => requireAuthority('MENU:ADMIN:WRITE'),
   component: MenusPage,
 })
 
@@ -98,7 +95,7 @@ const adminMenusRoute = createRoute({
 const adminWorkspaceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/workspace',
-  beforeLoad: () => requireAuth('ROLE_USER'),
+  beforeLoad: () => requireAuthority('WORKSPACE:READ'),
   component: WorkspacePage,
 })
 
