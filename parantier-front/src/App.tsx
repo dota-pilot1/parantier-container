@@ -23,20 +23,11 @@ function App() {
     }
 
     window.addEventListener('popstate', handleNavigation)
-
-    // Listen for clicks on links
-    document.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement
-      if (target.tagName === 'A' && target.getAttribute('href')?.startsWith('/')) {
-        e.preventDefault()
-        const href = target.getAttribute('href')!
-        window.history.pushState({}, '', href)
-        setCurrentPath(href)
-      }
-    })
+    window.addEventListener('navigate', handleNavigation)
 
     return () => {
       window.removeEventListener('popstate', handleNavigation)
+      window.removeEventListener('navigate', handleNavigation)
     }
   }, [])
 

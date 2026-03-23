@@ -22,7 +22,7 @@ export function useUpdateUserRole() {
       // 사용자 목록 쿼리 무효화하여 새로고침
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
     },
-    onError: (error: any, { userName }) => {
+    onError: (error: any) => {
       toast.error(error.response?.data?.message || '권한 변경에 실패했습니다.')
     },
   })

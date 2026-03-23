@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
-import { zodValidator } from '@tanstack/zod-form-adapter'
 import { Eye, EyeOff, Check, X } from 'lucide-react'
 import {
   Dialog,
@@ -22,14 +21,13 @@ export function SignupDialog() {
   const [success, setSuccess] = useState(false)
   const [emailCheckStatus, setEmailCheckStatus] = useState<'idle' | 'checking' | 'available' | 'duplicate'>('idle')
 
-  const form = useForm<SignupFormData>({
+  const form = useForm({
     defaultValues: {
       email: '',
       username: '',
       password: '',
       passwordConfirm: '',
     },
-    validatorAdapter: zodValidator(),
     onSubmit: async ({ value }) => {
       // 제출 시 검증
       const result = signupSchema.safeParse(value)

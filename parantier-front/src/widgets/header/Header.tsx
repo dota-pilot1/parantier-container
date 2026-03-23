@@ -1,5 +1,4 @@
 import { useStore } from '@tanstack/react-store'
-import { Link } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { LoginForm } from '@/features/auth/login/LoginForm'
 import { LogoutButton } from '@/features/auth/logout/LogoutButton'
@@ -13,6 +12,12 @@ export function Header() {
   // 헤더 메뉴만 필터링 (HEADER 타입)
   const headerMenus = menus.filter((menu) => menu.menuType === 'HEADER')
 
+  const handleMenuClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault()
+    window.history.pushState({}, '', path)
+    window.dispatchEvent(new Event('navigate'))
+  }
+
   return (
     <header className="border-b border-border bg-card">
       <div className="max-w-full px-6 py-3">
@@ -21,13 +26,14 @@ export function Header() {
             <h1 className="text-xl font-bold text-primary">Palantier</h1>
             <nav className="flex items-center gap-6">
               {headerMenus.map((menu) => (
-                <Link
+                <a
                   key={menu.id}
-                  to={menu.path || '#'}
+                  href={menu.path || '#'}
+                  onClick={(e) => menu.path && handleMenuClick(e, menu.path)}
                   className="text-sm font-medium hover:text-primary transition-colors"
                 >
                   {menu.name}
-                </Link>
+                </a>
               ))}
             </nav>
           </div>
