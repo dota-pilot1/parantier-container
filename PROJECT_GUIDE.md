@@ -42,12 +42,17 @@ com.mapo.palantier
 ```
 
 ### 3. DB 마이그레이션
-- SQL 파일 직접 관리
-- 버전: V1, V2, V3... (단순 숫자)
-- 위치: `src/main/resources/db/migration/`
+- **위치**: `parantier-api/src/main/resources/db/migration/`
+- **명명 규칙**: V1, V2, V3... (단순 숫자)
+- **파일명 형식**: `V{숫자}__{설명}.sql` (예: `V1__create_users_table.sql`)
+- **중요**: 테이블 추가/변경 시 반드시 마이그레이션 파일 생성
 - Flyway 사용 예정
 
 ## 데이터베이스
+
+### 환경
+- **관리**: Docker Compose로 PostgreSQL 컨테이너 실행
+- **위치**: `docker-compose.yml` 파일로 설정 관리
 
 ### 연결 정보
 - Host: localhost
@@ -56,10 +61,16 @@ com.mapo.palantier
 - Username: palantier_user
 - Password: palantier_password
 
-### Docker Compose
+### Docker 명령어
 ```bash
 docker compose up -d  # PostgreSQL 시작
 docker compose down   # PostgreSQL 종료
+docker compose ps     # 실행 중인 컨테이너 확인
+```
+
+### psql 접속
+```bash
+docker compose exec postgres psql -U palantier_user -d palantier
 ```
 
 ## API 문서
@@ -71,6 +82,7 @@ docker compose down   # PostgreSQL 종료
 2. DDD 도메인별 패키지 분리
 3. Git commit에 마이그레이션 정보 명시
 4. Security 설정 엄격히 관리
+5. **백엔드 서버 시작은 사용자가 직접 수행 (Claude는 서버 시작하지 않음)**
 
 ## 파일 인코딩
 - **중요**: 모든 텍스트 파일은 UTF-8 인코딩 사용

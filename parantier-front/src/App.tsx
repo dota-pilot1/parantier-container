@@ -1,9 +1,10 @@
 import { Header } from '@/widgets/header/Header'
+import { Sidebar } from '@/widgets/sidebar/Sidebar'
 import { MainPage } from '@/pages/main/MainPage'
 import { UsersPage } from '@/pages/admin/users/UsersPage'
 import { useStore } from '@tanstack/react-store'
 import { authStore, authActions } from '@/entities/user/model/authStore'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Toaster } from 'sonner'
 import { QueryProvider } from '@/app/providers/QueryProvider'
 
@@ -39,6 +40,13 @@ function App() {
     }
   }, [])
 
+  // 현재 경로에서 헤더 메뉴 path 추출
+  const currentHeaderPath = useMemo(() => {
+    if (currentPath.startsWith('/admin')) return '/admin'
+    if (currentPath.startsWith('/dashboard')) return '/dashboard'
+    return null
+  }, [currentPath])
+
   const renderPage = () => {
     if (currentPath === '/admin/users') {
       if (auth.user?.role === 'ROLE_ADMIN') {
@@ -57,7 +65,7 @@ function App() {
 
   return (
     <QueryProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen flex flex-col bg-background">
         <Toaster
           position="top-right"
           richColors
@@ -65,7 +73,10 @@ function App() {
           duration={2000}
         />
         <Header />
-        <main>{renderPage()}</main>
+        <div className="flex flex-1">
+          {currentHeaderPath && <Sidebar headerMenuPath={currentHeaderPath} />}
+          <main className="flex-1">{renderPage()}</main>
+        </div>
       </div>
     </QueryProvider>
   )

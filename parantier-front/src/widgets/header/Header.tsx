@@ -1,11 +1,17 @@
 import { useStore } from '@tanstack/react-store'
+import { Link } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { LoginForm } from '@/features/auth/login/LoginForm'
 import { LogoutButton } from '@/features/auth/logout/LogoutButton'
 import { SignupDialog } from '@/features/auth/signup/SignupDialog'
+import { useMenuTree } from '@/features/menu/hooks/useMenuTree'
 
 export function Header() {
   const auth = useStore(authStore, (state) => state)
+  const { data: menus = [] } = useMenuTree()
+
+  // 헤더 메뉴만 필터링 (HEADER 타입)
+  const headerMenus = menus.filter((menu) => menu.menuType === 'HEADER')
 
   return (
     <header className="border-b border-border bg-card">
@@ -14,14 +20,15 @@ export function Header() {
           <div className="flex items-center gap-8">
             <h1 className="text-xl font-bold text-primary">Palantier</h1>
             <nav className="flex items-center gap-6">
-              <a href="/" className="text-sm font-medium hover:text-primary transition-colors">
-                홈
-              </a>
-              {auth.isAuthenticated && auth.user?.role === 'ROLE_ADMIN' && (
-                <a href="/admin/users" className="text-sm font-medium hover:text-primary transition-colors">
-                  유저관리
-                </a>
-              )}
+              {headerMenus.map((menu) => (
+                <Link
+                  key={menu.id}
+                  to={menu.path || '#'}
+                  className="text-sm font-medium hover:text-primary transition-colors"
+                >
+                  {menu.name}
+                </Link>
+              ))}
             </nav>
           </div>
 
