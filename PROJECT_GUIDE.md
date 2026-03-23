@@ -41,12 +41,26 @@ com.mapo.palantier
 └─ shared (공통)
 ```
 
-### 3. DB 마이그레이션
+### 3. DB 스키마 관리
+- **방식**: Flyway 대신 직접 SQL로 관리
+- **실행 방법**: Docker PostgreSQL 컨테이너에 직접 SQL 실행
+- **중요**: 테이블 추가/변경 시 반드시 SQL 파일로 기록 및 실행
+
+#### 테이블 생성 예시
+```bash
+# Docker 컨테이너에 직접 SQL 실행
+docker exec palantier-postgres psql -U palantier_user -d palantier -c "
+CREATE TABLE IF NOT EXISTS table_name (...);
+"
+
+# 또는 SQL 파일 실행
+docker exec -i palantier-postgres psql -U palantier_user -d palantier < script.sql
+```
+
+#### SQL 파일 관리 (선택사항)
 - **위치**: `parantier-api/src/main/resources/db/migration/`
-- **명명 규칙**: V1, V2, V3... (단순 숫자)
-- **파일명 형식**: `V{숫자}__{설명}.sql` (예: `V1__create_users_table.sql`)
-- **중요**: 테이블 추가/변경 시 반드시 마이그레이션 파일 생성
-- Flyway 사용 예정
+- **파일명**: `V{숫자}__{설명}.sql` (예: `V4__create_menus_table.sql`)
+- **용도**: 참고용 기록 (자동 실행 안 됨, 직접 실행 필요)
 
 ## 데이터베이스
 
