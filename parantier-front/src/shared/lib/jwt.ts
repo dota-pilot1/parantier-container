@@ -5,7 +5,8 @@
 interface JwtPayload {
   sub: string // email
   role: string
-  roles: string[] // 접근 가능한 권한 배열
+  roles: string[]       // 접근 가능한 역할 배열
+  authorities: string[] // 실제 권한 배열
   type: string
   iat: number
   exp: number
@@ -52,4 +53,12 @@ export function getRoleFromToken(token: string): string {
 export function getEmailFromToken(token: string): string {
   const payload = decodeJwt(token)
   return payload.sub
+}
+
+/**
+ * JWT 토큰에서 authorities 배열 추출
+ */
+export function getAuthoritiesFromToken(token: string): string[] {
+  const payload = decodeJwt(token)
+  return payload.authorities || []
 }

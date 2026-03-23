@@ -1,8 +1,9 @@
 export interface User {
   email: string
   username: string
-  role: string
-  roles: string[] // 접근 가능한 권한 배열 (권한 계층 포함)
+  role: string                  // 사용자의 역할 (ROLE_ADMIN, ROLE_USER)
+  roles: string[]               // 접근 가능한 역할 배열 (역할 계층 포함)
+  authorities: string[]         // 실제 권한 배열 (MENU:ADMIN:READ, PROJECT:CREATE 등)
 }
 
 export interface AuthState {

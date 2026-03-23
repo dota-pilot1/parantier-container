@@ -1,5 +1,6 @@
 package com.mapo.palantier.config;
 
+import com.mapo.palantier.authority.application.AuthorityService;
 import com.mapo.palantier.role.application.RoleHierarchyService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -22,17 +23,20 @@ public class JwtTokenProvider {
     private final long accessTokenExpiration;
     private final long refreshTokenExpiration;
     private final RoleHierarchyService roleHierarchyService;
+    private final AuthorityService authorityService;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
             @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration,
-            RoleHierarchyService roleHierarchyService
+            RoleHierarchyService roleHierarchyService,
+            AuthorityService authorityService
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
         this.roleHierarchyService = roleHierarchyService;
+        this.authorityService = authorityService;
     }
 
     /**
@@ -42,14 +46,19 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
 
-        // 권한 계층 조회 - 현재 권한으로 접근 가능한 모든 권한 배열
+        // 역할 계층 조회 - 현재 역할로 접근 가능한 모든 역할 배열
         List<String> accessibleRoles = roleHierarchyService.getAccessibleRoles(role);
-        System.out.println("🔑 JWT generateAccessToken - role: " + role + ", accessibleRoles: " + accessibleRoles);
+
+        // 권한 조회 - 역할에 부여된 실제 권한 배열
+        List<String> authorities = authorityService.getAuthoritiesByRole(role);
+
+        System.out.println("🔑 JWT generateAccessToken - role: " + role + ", accessibleRoles: " + accessibleRoles + ", authorities: " + authorities);
 
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
                 .claim("roles", accessibleRoles)
+                .claim("authorities", authorities)
                 .claim("type", "ACCESS")
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -109,7 +118,7 @@ public class JwtTokenProvider {
     }
 
     /**
-     * JWT 토큰에서 접근 가능한 권한 배열 추출
+     * JWT 토큰에서 접근 가능한 역할 배열 추출
      */
     @SuppressWarnings("unchecked")
     public List<String> getRolesFromToken(String token) {
@@ -120,6 +129,20 @@ public class JwtTokenProvider {
                 .getPayload();
 
         return claims.get("roles", List.class);
+    }
+
+    /**
+     * JWT 토큰에서 권한 배열 추출
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getAuthoritiesFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.get("authorities", List.class);
     }
 
     /**

@@ -1,7 +1,7 @@
 import { Store } from '@tanstack/react-store'
 import type { AuthState, User } from '@/shared/types/auth'
 import { authApi } from '@/entities/user/api/authApi'
-import { getRolesFromToken } from '@/shared/lib/jwt'
+import { getRolesFromToken, getAuthoritiesFromToken } from '@/shared/lib/jwt'
 
 // 초기 상태
 const accessToken = localStorage.getItem('accessToken')
@@ -72,12 +72,13 @@ export const authActions = {
     try {
       const user = await authApi.getCurrentUser()
 
-      // JWT에서 roles 배열 추출
+      // JWT에서 roles, authorities 배열 추출
       const roles = getRolesFromToken(accessToken)
+      const authorities = getAuthoritiesFromToken(accessToken)
 
       authStore.setState((state) => ({
         ...state,
-        user: { ...user, roles },
+        user: { ...user, roles, authorities },
         accessToken,
         refreshToken,
         isAuthenticated: true,
