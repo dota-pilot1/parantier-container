@@ -20,6 +20,7 @@ export function MenusPage() {
   const [addingChildToId, setAddingChildToId] = useState<number | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Menu | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [inputValue, setInputValue] = useState('')
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -244,8 +245,14 @@ export function MenusPage() {
 
   // 검색어가 있을 때 자동 확장 적용
   useEffect(() => {
-    if (searchQuery.trim() && autoExpandedIds.size > 0) {
-      setExpandedIds(autoExpandedIds)
+    if (searchQuery.trim()) {
+      if (autoExpandedIds.size > 0) {
+        // 검색 결과가 있으면 매칭된 메뉴의 부모만 확장
+        setExpandedIds(autoExpandedIds)
+      } else {
+        // 검색 결과가 없으면 모두 접기
+        setExpandedIds(new Set())
+      }
     }
   }, [searchQuery, autoExpandedIds])
 
@@ -399,20 +406,23 @@ export function MenusPage() {
                 <div className="flex-1 relative">
                   <input
                     type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        // 엔터키 입력 시 검색 실행 (이미 onChange로 실시간 필터링 중)
-                        e.currentTarget.blur() // 포커스 해제하여 검색 완료 표시
+                        setSearchQuery(inputValue)
+                        e.currentTarget.blur()
                       }
                     }}
-                    placeholder="메뉴 검색 (Enter로 확인)..."
+                    placeholder="메뉴 검색 후 Enter..."
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  {searchQuery && (
+                  {(inputValue || searchQuery) && (
                     <button
-                      onClick={() => setSearchQuery('')}
+                      onClick={() => {
+                        setInputValue('')
+                        setSearchQuery('')
+                      }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
                       ✕
