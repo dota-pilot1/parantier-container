@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { authStore } from '@/entities/user/model/authStore'
 import { LoginForm } from '@/features/auth/login/LoginForm'
@@ -12,40 +13,26 @@ export function Header() {
   // 헤더 메뉴만 필터링 (HEADER 타입)
   const headerMenus = menus.filter((menu) => menu.menuType === 'HEADER')
 
-  const handleMenuClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
-    e.preventDefault()
-    window.history.pushState({}, '', path)
-    window.dispatchEvent(new Event('navigate'))
-  }
-
-  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    window.history.pushState({}, '', '/dashboard')
-    window.dispatchEvent(new Event('navigate'))
-  }
-
   return (
     <header className="border-b border-border bg-card">
       <div className="max-w-full px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <a
-              href="/dashboard"
-              onClick={handleLogoClick}
+            <Link
+              to="/"
               className="text-xl font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer"
             >
               Palantier
-            </a>
+            </Link>
             <nav className="flex items-center gap-6">
               {headerMenus.map((menu) => (
-                <a
+                <Link
                   key={menu.id}
-                  href={menu.path || '#'}
-                  onClick={(e) => menu.path && handleMenuClick(e, menu.path)}
+                  to={menu.path || '/'}
                   className="text-sm font-medium hover:text-primary transition-colors"
                 >
                   {menu.name}
-                </a>
+                </Link>
               ))}
             </nav>
           </div>
