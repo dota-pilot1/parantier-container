@@ -6,6 +6,7 @@ interface TreeViewProps {
   expandedIds: Set<number>
   selectedId: number | null
   addingChildToId: number | null
+  highlightedIds: Set<number>
   onSelect: (menu: Menu) => void
   onToggle: (id: number) => void
   onContextMenu: (x: number, y: number, menu: Menu) => void
@@ -18,6 +19,7 @@ export function TreeView({
   expandedIds,
   selectedId,
   addingChildToId,
+  highlightedIds,
   onSelect,
   onToggle,
   onContextMenu,
@@ -52,6 +54,7 @@ export function TreeView({
           expandedIds={expandedIds}
           selectedId={selectedId}
           addingChildToId={addingChildToId}
+          highlightedIds={highlightedIds}
           onSelect={onSelect}
           onToggle={onToggle}
           onContextMenu={onContextMenu}

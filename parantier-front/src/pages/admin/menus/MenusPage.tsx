@@ -8,6 +8,7 @@ import type { Menu, CreateMenuRequest } from '@/types/menu'
 import { TreeView } from './components/TreeView'
 import { MenuEditForm } from './components/MenuEditForm'
 import { ContextMenu } from './components/ContextMenu'
+import { DeleteConfirmDialog } from './components/DeleteConfirmDialog'
 
 export function MenusPage() {
   const queryClient = useQueryClient()
@@ -17,6 +18,8 @@ export function MenusPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [parentMenu, setParentMenu] = useState<Menu | null>(null)
   const [addingChildToId, setAddingChildToId] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Menu | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -112,11 +115,66 @@ export function MenusPage() {
     }
   }
 
-  // 삭제 처리
-  const handleDelete = (id: number) => {
-    if (confirm('정말 삭제하시겠습니까?')) {
-      deleteMutation.mutate(id)
+  // 하위 메뉴 개수 계산
+  const countChildren = (menuId: number): number => {
+    const flattenMenus = (menuList: Menu[]): Menu[] => {
+      const result: Menu[] = []
+      menuList.forEach((menu) => {
+        result.push(menu)
+        if (menu.children && menu.children.length > 0) {
+          result.push(...flattenMenus(menu.children))
+        }
+      })
+      return result
     }
+
+    const allMenus = flattenMenus(menus)
+    const children = allMenus.filter((m) => m.parentId === menuId)
+
+    let count = children.length
+    children.forEach((child) => {
+      count += countChildren(child.id)
+    })
+
+    return count
+  }
+
+  // 삭제 처리 (다이얼로그 열기)
+  const handleDelete = (id: number) => {
+    const menu = menus.find((m) => m.id === id)
+    if (!menu) {
+      // 중첩된 메뉴 검색
+      const flattenMenus = (menuList: Menu[]): Menu[] => {
+        const result: Menu[] = []
+        menuList.forEach((m) => {
+          result.push(m)
+          if (m.children && m.children.length > 0) {
+            result.push(...flattenMenus(m.children))
+          }
+        })
+        return result
+      }
+      const allMenus = flattenMenus(menus)
+      const foundMenu = allMenus.find((m) => m.id === id)
+      if (foundMenu) {
+        setDeleteTarget(foundMenu)
+      }
+    } else {
+      setDeleteTarget(menu)
+    }
+  }
+
+  // 삭제 확인
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      deleteMutation.mutate(deleteTarget.id)
+      setDeleteTarget(null)
+    }
+  }
+
+  // 삭제 취소
+  const handleCancelDelete = () => {
+    setDeleteTarget(null)
   }
 
   // 취소
@@ -124,6 +182,72 @@ export function MenusPage() {
     setSelectedMenu(null)
     setIsCreating(false)
   }
+
+  // 메뉴 필터링 및 매칭된 메뉴의 부모 자동 확장
+  const getFilteredMenusAndExpandedIds = (): {
+    filteredMenus: Menu[]
+    highlightedIds: Set<number>
+    autoExpandedIds: Set<number>
+  } => {
+    if (!searchQuery.trim()) {
+      return {
+        filteredMenus: menus,
+        highlightedIds: new Set(),
+        autoExpandedIds: new Set(),
+      }
+    }
+
+    const query = searchQuery.toLowerCase()
+    const flattenMenus = (menuList: Menu[]): Menu[] => {
+      const result: Menu[] = []
+      menuList.forEach((menu) => {
+        result.push(menu)
+        if (menu.children && menu.children.length > 0) {
+          result.push(...flattenMenus(menu.children))
+        }
+      })
+      return result
+    }
+
+    const allMenus = flattenMenus(menus)
+
+    // 매칭된 메뉴 찾기
+    const matchedMenus = allMenus.filter((menu) =>
+      menu.name.toLowerCase().includes(query)
+    )
+
+    const highlightedIds = new Set(matchedMenus.map((m) => m.id))
+
+    // 매칭된 메뉴의 모든 부모 ID 수집
+    const getParentIds = (menuId: number | null): number[] => {
+      if (!menuId) return []
+      const parent = allMenus.find((m) => m.id === menuId)
+      if (!parent || !parent.parentId) return []
+      return [parent.parentId, ...getParentIds(parent.parentId)]
+    }
+
+    const autoExpandedIds = new Set<number>()
+    matchedMenus.forEach((menu) => {
+      const parentIds = getParentIds(menu.id)
+      parentIds.forEach((id) => autoExpandedIds.add(id))
+    })
+
+    return {
+      filteredMenus: menus,
+      highlightedIds,
+      autoExpandedIds,
+    }
+  }
+
+  const { filteredMenus, highlightedIds, autoExpandedIds } =
+    getFilteredMenusAndExpandedIds()
+
+  // 검색어가 있을 때 자동 확장 적용
+  useEffect(() => {
+    if (searchQuery.trim() && autoExpandedIds.size > 0) {
+      setExpandedIds(autoExpandedIds)
+    }
+  }, [searchQuery, autoExpandedIds])
 
   // 전체 펼치기
   const handleExpandAll = () => {
@@ -269,16 +393,53 @@ export function MenusPage() {
                   </button>
                 </div>
               </div>
-              <Button onClick={handleCreateNew} className="w-full" size="sm">
-                + 새 메뉴 추가
-              </Button>
+
+              {/* 검색 입력창과 추가 버튼 */}
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        // 엔터키 입력 시 검색 실행 (이미 onChange로 실시간 필터링 중)
+                        e.currentTarget.blur() // 포커스 해제하여 검색 완료 표시
+                      }
+                    }}
+                    placeholder="메뉴 검색 (Enter로 확인)..."
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                <Button onClick={handleCreateNew} size="sm" className="flex-shrink-0">
+                  +
+                </Button>
+              </div>
+
+              {/* 검색 결과 카운트 */}
+              {searchQuery && (
+                <div className="mt-2 text-xs text-gray-600">
+                  {highlightedIds.size > 0
+                    ? `${highlightedIds.size}개의 메뉴 찾음`
+                    : '검색 결과 없음'}
+                </div>
+              )}
             </div>
             <div className="overflow-y-auto p-4" style={{ maxHeight: 'calc(100vh - 350px)' }}>
               <TreeView
-                menus={menus}
+                menus={filteredMenus}
                 expandedIds={expandedIds}
                 selectedId={selectedMenu?.id || null}
                 addingChildToId={addingChildToId}
+                highlightedIds={highlightedIds}
                 onSelect={handleSelect}
                 onToggle={handleToggle}
                 onContextMenu={handleContextMenu}
@@ -336,6 +497,16 @@ export function MenusPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* 삭제 확인 다이얼로그 */}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          menu={deleteTarget}
+          childCount={countChildren(deleteTarget.id)}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+        />
       )}
     </div>
   )

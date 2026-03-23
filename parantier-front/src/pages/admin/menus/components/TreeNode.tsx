@@ -8,6 +8,7 @@ interface TreeNodeProps {
   expandedIds: Set<number>
   selectedId: number | null
   addingChildToId: number | null
+  highlightedIds: Set<number>
   onSelect: (menu: Menu) => void
   onToggle: (id: number) => void
   onContextMenu: (x: number, y: number, menu: Menu) => void
@@ -22,6 +23,7 @@ export function TreeNode({
   expandedIds,
   selectedId,
   addingChildToId,
+  highlightedIds,
   onSelect,
   onToggle,
   onContextMenu,
@@ -32,6 +34,7 @@ export function TreeNode({
   const hasChildren = children.length > 0
   const isExpanded = expandedIds.has(menu.id)
   const isSelected = menu.id === selectedId
+  const isHighlighted = highlightedIds.has(menu.id)
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -43,7 +46,11 @@ export function TreeNode({
     <div>
       <div
         className={`flex cursor-pointer items-center rounded px-3 py-2 transition-colors hover:bg-gray-100 ${
-          isSelected ? 'bg-blue-50 font-semibold text-blue-700' : ''
+          isSelected
+            ? 'bg-blue-50 font-semibold text-blue-700'
+            : isHighlighted
+              ? 'bg-yellow-50 font-medium'
+              : ''
         }`}
         style={{ paddingLeft: `${depth * 20 + 12}px` }}
         onClick={() => onSelect(menu)}
@@ -93,6 +100,7 @@ export function TreeNode({
               expandedIds={expandedIds}
               selectedId={selectedId}
               addingChildToId={addingChildToId}
+              highlightedIds={highlightedIds}
               onSelect={onSelect}
               onToggle={onToggle}
               onContextMenu={onContextMenu}
