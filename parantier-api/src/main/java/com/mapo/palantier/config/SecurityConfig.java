@@ -58,6 +58,8 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 // Auth endpoints - 회원가입/로그인/이메일 중복 체크는 인증 없이 접근 가능
                 .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/check-email").permitAll()
+                // Menu endpoints - 메뉴 조회는 인증 없이 접근 가능 (동적 네비게이션용)
+                .requestMatchers("/api/menus/**").permitAll()
                 // Admin endpoints - 관리자 전용
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // 나머지 Actuator endpoints - 인증 필요
