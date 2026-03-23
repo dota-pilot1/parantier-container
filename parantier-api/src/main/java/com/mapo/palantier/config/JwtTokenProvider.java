@@ -44,6 +44,7 @@ public class JwtTokenProvider {
 
         // 권한 계층 조회 - 현재 권한으로 접근 가능한 모든 권한 배열
         List<String> accessibleRoles = roleHierarchyService.getAccessibleRoles(role);
+        System.out.println("🔑 JWT generateAccessToken - role: " + role + ", accessibleRoles: " + accessibleRoles);
 
         return Jwts.builder()
                 .subject(email)

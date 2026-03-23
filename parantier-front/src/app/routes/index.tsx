@@ -18,6 +18,9 @@ import { toast } from 'sonner'
 const requireAuth = (requiredRole?: string) => {
   const auth = authStore.state
 
+  console.log('requireAuth - auth:', auth)
+  console.log('requireAuth - requiredRole:', requiredRole)
+
   if (!auth.isAuthenticated) {
     toast.error('로그인이 필요합니다')
     throw redirect({ to: '/dashboard' })
@@ -30,13 +33,17 @@ const requireAuth = (requiredRole?: string) => {
 
   // JWT에서 추출한 roles 배열로 권한 체크
   const userRoles = auth.user?.roles || []
+  console.log('requireAuth - user.role:', auth.user?.role)
+  console.log('requireAuth - user.roles:', userRoles)
 
   // roles 배열에 requiredRole이 포함되어 있으면 접근 허용
   if (userRoles.includes(requiredRole)) {
+    console.log('requireAuth - 접근 허용')
     return
   }
 
   // 권한이 없으면 접근 차단
+  console.log('requireAuth - 접근 차단')
   toast.error('접근 권한이 없습니다', {
     description: `${requiredRole} 권한이 필요합니다.`,
   })
