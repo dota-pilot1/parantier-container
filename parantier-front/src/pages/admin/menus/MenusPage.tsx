@@ -9,6 +9,7 @@ import { TreeView } from './components/TreeView'
 import { MenuEditForm } from './components/MenuEditForm'
 import { ContextMenu } from './components/ContextMenu'
 import { DeleteConfirmDialog } from './components/DeleteConfirmDialog'
+import { DebugPanel } from './components/DebugPanel'
 
 export function MenusPage() {
   const queryClient = useQueryClient()
@@ -519,17 +520,8 @@ export function MenusPage() {
         />
       )}
 
-      {/* 트리 구조 확인 */}
-      {menus.length > 0 && (
-        <div className="mt-6 rounded-lg border bg-card p-4">
-          <h3 className="font-semibold mb-2 text-sm text-gray-600">
-            트리 구조 확인 (Tree Structure Check)
-          </h3>
-          <pre className="text-xs bg-gray-50 p-4 rounded overflow-auto max-h-96">
-            {JSON.stringify(menus, null, 2)}
-          </pre>
-        </div>
-      )}
+      {/* 디버그 패널 (최하단 토글) */}
+      {menus.length > 0 && <DebugPanel data={menus} title="트리 구조 확인 (Debug)" />}
     </div>
   )
 }
