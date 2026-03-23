@@ -120,7 +120,8 @@ export function UsersPage() {
         width: 90,
         filter: 'agNumberColumnFilter',
         sortable: true,
-        cellStyle: { display: 'flex', alignItems: 'center' } as any,
+        cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center' } as any,
+        headerClass: 'ag-header-cell-center',
       },
       {
         headerName: '이메일',
@@ -129,7 +130,8 @@ export function UsersPage() {
         minWidth: 250,
         filter: 'agTextColumnFilter',
         sortable: true,
-        cellStyle: { display: 'flex', alignItems: 'center' } as any,
+        cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center' } as any,
+        headerClass: 'ag-header-cell-center',
       },
       {
         headerName: '이름',
@@ -137,7 +139,8 @@ export function UsersPage() {
         width: 180,
         filter: 'agTextColumnFilter',
         sortable: true,
-        cellStyle: { display: 'flex', alignItems: 'center' } as any,
+        cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center' } as any,
+        headerClass: 'ag-header-cell-center',
       },
       {
         headerName: '권한',
@@ -146,7 +149,8 @@ export function UsersPage() {
         cellRenderer: RoleCellRenderer,
         filter: 'agTextColumnFilter',
         sortable: true,
-        cellStyle: { display: 'flex', alignItems: 'center', padding: '8px 12px' } as any,
+        cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 12px' } as any,
+        headerClass: 'ag-header-cell-center',
       },
       {
         headerName: '상태',
@@ -155,7 +159,8 @@ export function UsersPage() {
         cellRenderer: StatusCellRenderer,
         filter: 'agTextColumnFilter',
         sortable: true,
-        cellStyle: { display: 'flex', alignItems: 'center' } as any,
+        cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center' } as any,
+        headerClass: 'ag-header-cell-center',
       },
       {
         headerName: '가입일',
@@ -166,7 +171,8 @@ export function UsersPage() {
         },
         filter: 'agDateColumnFilter',
         sortable: true,
-        cellStyle: { display: 'flex', alignItems: 'center' } as any,
+        cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center' } as any,
+        headerClass: 'ag-header-cell-center',
       },
     ],
     []
@@ -237,6 +243,7 @@ export function UsersPage() {
           onSelectionChanged={handleSelectionChanged}
           suppressRowClickSelection={true}
           suppressCellFocus={true}
+          suppressPaginationPanel={false}
           theme={themeQuartz.withParams({
             headerHeight: 52,
             rowHeight: 60,

@@ -1,11 +1,11 @@
 import { Header } from '@/widgets/header/Header'
-import { Sidebar } from '@/widgets/sidebar/Sidebar'
 import { MainPage } from '@/pages/main/MainPage'
 import { UsersPage } from '@/pages/admin/users/UsersPage'
+import { MenusPage } from '@/pages/admin/menus/MenusPage'
 import { useStore } from '@tanstack/react-store'
 import { authStore, authActions } from '@/entities/user/model/authStore'
-import { useEffect, useState, useMemo } from 'react'
-import { Toaster } from 'sonner'
+import { useEffect, useState } from 'react'
+import { Toaster, toast } from 'sonner'
 import { QueryProvider } from '@/app/providers/QueryProvider'
 
 function App() {
@@ -31,26 +31,49 @@ function App() {
     }
   }, [])
 
-  // 현재 경로에서 헤더 메뉴 path 추출
-  const currentHeaderPath = useMemo(() => {
-    if (currentPath.startsWith('/admin')) return '/admin'
-    if (currentPath.startsWith('/dashboard')) return '/dashboard'
-    return null
-  }, [currentPath])
+  // 대시보드로 리다이렉트하는 헬퍼 함수
+  const redirectToDashboard = () => {
+    toast.error('접근 권한이 없습니다', {
+      description: '관리자 권한이 필요한 페이지입니다.',
+    })
+    window.history.pushState({}, '', '/dashboard')
+    window.dispatchEvent(new Event('navigate'))
+  }
 
   const renderPage = () => {
+    // 루트 경로는 대시보드로 리다이렉트
+    if (currentPath === '/') {
+      window.history.replaceState({}, '', '/dashboard')
+      window.dispatchEvent(new Event('navigate'))
+      return <MainPage />
+    }
+
+    // 대시보드 페이지
+    if (currentPath === '/dashboard') {
+      return <MainPage />
+    }
+
+    // 관리자 - 사용자 관리
     if (currentPath === '/admin/users') {
       if (auth.user?.role === 'ROLE_ADMIN') {
         return <UsersPage />
       } else {
-        return (
-          <div className="flex items-center justify-center min-h-screen">
-            <p className="text-lg text-destructive">접근 권한이 없습니다.</p>
-          </div>
-        )
+        redirectToDashboard()
+        return <MainPage />
       }
     }
 
+    // 관리자 - 메뉴 관리
+    if (currentPath === '/admin/menus') {
+      if (auth.user?.role === 'ROLE_ADMIN') {
+        return <MenusPage />
+      } else {
+        redirectToDashboard()
+        return <MainPage />
+      }
+    }
+
+    // 기본값: 대시보드
     return <MainPage />
   }
 
@@ -64,10 +87,7 @@ function App() {
           duration={2000}
         />
         <Header />
-        <div className="flex flex-1">
-          {currentHeaderPath && <Sidebar headerMenuPath={currentHeaderPath} />}
-          <main className="flex-1">{renderPage()}</main>
-        </div>
+        <main className="flex-1">{renderPage()}</main>
       </div>
     </QueryProvider>
   )

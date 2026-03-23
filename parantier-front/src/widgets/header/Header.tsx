@@ -18,12 +18,24 @@ export function Header() {
     window.dispatchEvent(new Event('navigate'))
   }
 
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    window.history.pushState({}, '', '/dashboard')
+    window.dispatchEvent(new Event('navigate'))
+  }
+
   return (
     <header className="border-b border-border bg-card">
       <div className="max-w-full px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <h1 className="text-xl font-bold text-primary">Palantier</h1>
+            <a
+              href="/dashboard"
+              onClick={handleLogoClick}
+              className="text-xl font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              Palantier
+            </a>
             <nav className="flex items-center gap-6">
               {headerMenus.map((menu) => (
                 <a

@@ -5,8 +5,10 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { authActions } from '@/entities/user/model/authStore'
 import { authApi } from '@/entities/user/api/authApi'
+import { useQueryClient } from '@tanstack/react-query'
 
 export function LoginForm() {
+  const queryClient = useQueryClient()
   const [email, setEmail] = useState('terecal@daum.net')
   const [password, setPassword] = useState('password123!')
   const [showPassword, setShowPassword] = useState(false)
@@ -26,6 +28,9 @@ export function LoginForm() {
         username: response.username,
         role: response.role,
       })
+
+      // 로그인 성공 시 메뉴 쿼리 무효화 (권한에 따라 다른 메뉴를 보여주기 위함)
+      queryClient.invalidateQueries({ queryKey: ['menus'] })
 
       setEmail('')
       setPassword('')

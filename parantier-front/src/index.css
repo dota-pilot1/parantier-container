@@ -57,3 +57,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* AG-Grid 헤더 중앙 정렬 */
+.ag-header-cell-center .ag-header-cell-label {
+  justify-content: center;
+}
