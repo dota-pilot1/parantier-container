@@ -1,13 +1,17 @@
 package com.mapo.palantier.menu.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Menu {
     private Long id;
     private String name;
@@ -22,5 +26,6 @@ public class Menu {
     private LocalDateTime updatedAt;
 
     // 트리 구조용 (조회 시에만 사용)
-    private List<Menu> children;
+    @Builder.Default
+    private List<Menu> children = null;
 }
