@@ -1,9 +1,9 @@
 import type { Organization } from '@/types/organization'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useOrganizations } from '@/features/admin/hooks/useOrganizations'
 import { useUsers } from '@/features/admin/hooks/useUsers'
 import { Button } from '@/shared/ui/button'
-import { Building2, Users as UsersIcon, Folder, User, UserPlus, Edit, Trash2, UserMinus, Move } from 'lucide-react'
+import { Building2, Users as UsersIcon, Folder, User, UserPlus, Edit, Trash2, UserMinus, Move, Search } from 'lucide-react'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -11,6 +11,16 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/shared/ui/context-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
+import { Checkbox } from '@/shared/ui/checkbox'
 
 // 조직 타입별 아이콘
 const orgTypeIcons: Record<string, typeof Building2> = {
@@ -34,11 +44,49 @@ function OrganizationTreeNode({
   users: Array<{ id: number; username: string; email: string; organizationId: number | null; role: string; isActive: boolean }>
 }) {
   const [isExpanded, setIsExpanded] = useState(level < 2) // 기본적으로 2단계까지 펼침
+  const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set())
+
   const hasChildren = org.children && org.children.length > 0
   const orgUsers = users.filter(user => user.organizationId === org.id)
   const hasContent = hasChildren || orgUsers.length > 0
   const isSelected = selectedOrgId === org.id
   const Icon = orgTypeIcons[org.orgType] || Building2
+
+  // 조직에 속하지 않은 사용자 필터링
+  const availableUsers = useMemo(() => {
+    return users.filter(user => user.organizationId === null)
+  }, [users])
+
+  // 검색 필터링
+  const filteredAvailableUsers = useMemo(() => {
+    if (!searchQuery.trim()) return availableUsers
+    const query = searchQuery.toLowerCase()
+    return availableUsers.filter(
+      user =>
+        user.username.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query)
+    )
+  }, [availableUsers, searchQuery])
+
+  const handleToggleUser = (userId: number) => {
+    const newSet = new Set(selectedUserIds)
+    if (newSet.has(userId)) {
+      newSet.delete(userId)
+    } else {
+      newSet.add(userId)
+    }
+    setSelectedUserIds(newSet)
+  }
+
+  const handleAddMembers = () => {
+    // TODO: API 호출하여 실제로 팀원 추가
+    console.log('Adding users', Array.from(selectedUserIds), 'to org', org.id)
+    setIsAddMemberDialogOpen(false)
+    setSelectedUserIds(new Set())
+    setSearchQuery('')
+  }
 
   return (
     <div className="ml-4">
@@ -76,7 +124,7 @@ function OrganizationTreeNode({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
-          <ContextMenuItem onClick={() => alert('팀원 추가 기능 준비 중')}>
+          <ContextMenuItem onClick={() => setIsAddMemberDialogOpen(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
             <span>팀원 추가</span>
           </ContextMenuItem>
@@ -94,6 +142,87 @@ function OrganizationTreeNode({
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
+
+      {/* 팀원 추가 다이얼로그 */}
+      <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>팀원 추가 - {org.name}</DialogTitle>
+            <DialogDescription>
+              조직에 추가할 사용자를 선택하세요. 현재 조직에 속하지 않은 사용자만 표시됩니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* 검색 입력 */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="이름 또는 이메일로 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* 사용자 목록 */}
+            <div className="border rounded-lg max-h-96 overflow-y-auto">
+              {filteredAvailableUsers.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  {searchQuery
+                    ? '검색 결과가 없습니다.'
+                    : '추가 가능한 사용자가 없습니다.'}
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {filteredAvailableUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center gap-3 p-3 hover:bg-accent cursor-pointer transition-colors"
+                      onClick={() => handleToggleUser(user.id)}
+                    >
+                      <Checkbox
+                        checked={selectedUserIds.has(user.id)}
+                        onCheckedChange={() => handleToggleUser(user.id)}
+                      />
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{user.username}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {user.role === 'ROLE_ADMIN' ? '관리자' : '일반'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 선택된 사용자 수 */}
+            {selectedUserIds.size > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {selectedUserIds.size}명 선택됨
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddMemberDialogOpen(false)}>
+              취소
+            </Button>
+            <Button
+              onClick={handleAddMembers}
+              disabled={selectedUserIds.size === 0}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              추가 ({selectedUserIds.size})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isExpanded && hasContent && (
         <div className="ml-2 border-l border-border">
