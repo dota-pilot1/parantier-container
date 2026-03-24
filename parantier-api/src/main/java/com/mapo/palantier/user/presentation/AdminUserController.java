@@ -43,4 +43,21 @@ public class AdminUserController {
         userService.updateUserRole(userId, request.getRole());
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "사용자 조직 일괄 변경", description = "관리자가 여러 사용자의 조직을 일괄 변경합니다.")
+    @PatchMapping("/organization")
+    public ResponseEntity<Void> updateUsersOrganization(
+            @RequestParam List<Long> userIds,
+            @RequestParam Long organizationId
+    ) {
+        userService.updateUsersOrganization(userIds, organizationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "사용자 조직에서 제거", description = "관리자가 사용자를 조직에서 제거합니다 (미소속 상태로 변경).")
+    @DeleteMapping("/{userId}/organization")
+    public ResponseEntity<Void> removeUserFromOrganization(@PathVariable Long userId) {
+        userService.removeUserFromOrganization(userId);
+        return ResponseEntity.noContent().build();
+    }
 }

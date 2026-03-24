@@ -21,6 +21,10 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { adminApi } from '@/entities/user/api/adminApi'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { useConfirm } from '@/shared/hooks/useConfirm'
 
 // 조직 타입별 아이콘
 const orgTypeIcons: Record<string, typeof Building2> = {
@@ -34,21 +38,28 @@ function OrganizationTreeNode({
   org,
   level = 0,
   selectedOrgId,
+  selectedUserId,
   onSelect,
+  onSelectUser,
   users,
   organizations,
 }: {
   org: Organization
   level?: number
   selectedOrgId: number | null
+  selectedUserId: number | null
   onSelect: (org: Organization) => void
+  onSelectUser: (userId: number) => void
   users: Array<{ id: number; username: string; email: string; organizationId: number | null; role: string; isActive: boolean }>
   organizations: Organization[]
 }) {
+  const queryClient = useQueryClient()
+  const { confirm, ConfirmDialog } = useConfirm()
   const [isExpanded, setIsExpanded] = useState(level < 2) // 기본적으로 2단계까지 펼침
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set())
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const hasChildren = org.children && org.children.length > 0
   const orgUsers = users.filter(user => user.organizationId === org.id)
@@ -56,40 +67,16 @@ function OrganizationTreeNode({
   const isSelected = selectedOrgId === org.id
   const Icon = orgTypeIcons[org.orgType] || Building2
 
-  // 검색 필터링 (모든 사용자 대상)
+  // 이미 소속된 사용자는 제외하고, 미소속 사용자만 표시
+  const availableUsers = users.filter(user => !user.organizationId || user.organizationId !== org.id)
+
+  // 검색 필터링 (미소속 사용자 대상)
   const filteredUsers = !searchQuery.trim()
-    ? users
-    : users.filter(user => {
+    ? availableUsers
+    : availableUsers.filter(user => {
         const query = searchQuery.toLowerCase()
         return user.username.toLowerCase().includes(query) || user.email.toLowerCase().includes(query)
       })
-
-  // 현재 조직에 속하지 않은 사용자만 선택 가능
-  const isUserSelectable = (userId: number) => {
-    const user = users.find(u => u.id === userId)
-    return user && (user.organizationId === null || user.organizationId === org.id)
-  }
-
-  // 사용자의 조직 이름 찾기
-  const getUserOrgName = (userId: number) => {
-    const user = users.find(u => u.id === userId)
-    if (!user || !user.organizationId) return null
-
-    // 재귀적으로 조직 찾기
-    const findOrgById = (orgs: Organization[], id: number): Organization | null => {
-      for (const org of orgs) {
-        if (org.id === id) return org
-        if (org.children) {
-          const found = findOrgById(org.children, id)
-          if (found) return found
-        }
-      }
-      return null
-    }
-
-    const userOrg = findOrgById(organizations, user.organizationId)
-    return userOrg?.name || '알 수 없음'
-  }
 
   const handleToggleUser = (userId: number) => {
     const newSet = new Set(selectedUserIds)
@@ -101,12 +88,24 @@ function OrganizationTreeNode({
     setSelectedUserIds(newSet)
   }
 
-  const handleAddMembers = () => {
-    // TODO: API 호출하여 실제로 팀원 추가
-    console.log('Adding users', Array.from(selectedUserIds), 'to org', org.id)
-    setIsAddMemberDialogOpen(false)
-    setSelectedUserIds(new Set())
-    setSearchQuery('')
+  const handleAddMembers = async () => {
+    try {
+      setIsSubmitting(true)
+      await adminApi.updateUsersOrganization(Array.from(selectedUserIds), org.id)
+
+      // 사용자 목록 다시 가져오기
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+
+      toast.success(`${selectedUserIds.size}명의 사용자를 ${org.name}에 추가했습니다.`)
+      setIsAddMemberDialogOpen(false)
+      setSelectedUserIds(new Set())
+      setSearchQuery('')
+    } catch (error) {
+      console.error('Failed to add members:', error)
+      toast.error('팀원 추가에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -170,7 +169,7 @@ function OrganizationTreeNode({
           <DialogHeader>
             <DialogTitle>팀원 추가 - {org.name}</DialogTitle>
             <DialogDescription>
-              조직에 추가할 사용자를 선택하세요. 모든 사용자가 표시되며, 현재 소속 조직을 확인할 수 있습니다.
+              조직에 추가할 사용자를 선택하세요. 미소속 사용자만 표시됩니다.
             </DialogDescription>
           </DialogHeader>
 
@@ -194,58 +193,30 @@ function OrganizationTreeNode({
                 </div>
               ) : (
                 <div className="divide-y">
-                  {filteredUsers.map((user) => {
-                    const orgName = getUserOrgName(user.id)
-                    const selectable = isUserSelectable(user.id)
-                    const isCurrentOrg = user.organizationId === org.id
-
-                    return (
-                      <div
-                        key={user.id}
-                        className={`flex items-center gap-3 p-4 transition-colors ${
-                          selectable && !isCurrentOrg
-                            ? 'hover:bg-accent cursor-pointer'
-                            : 'opacity-50 cursor-not-allowed'
-                        }`}
-                        onClick={() => {
-                          if (selectable && !isCurrentOrg) {
-                            handleToggleUser(user.id)
-                          }
-                        }}
-                      >
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            checked={selectedUserIds.has(user.id)}
-                            onCheckedChange={() => {
-                              if (selectable && !isCurrentOrg) {
-                                handleToggleUser(user.id)
-                              }
-                            }}
-                            disabled={!selectable || isCurrentOrg}
-                          />
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <User className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium">{user.username}</p>
-                          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                        </div>
-                        <div className="text-right min-w-[120px]">
-                          <p className="text-sm font-medium">
-                            {user.role === 'ROLE_ADMIN' ? '관리자' : '일반 사용자'}
-                          </p>
-                          {orgName ? (
-                            <p className="text-xs text-muted-foreground">
-                              {isCurrentOrg ? '이미 소속됨' : `소속: ${orgName}`}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-green-600">미소속</p>
-                          )}
-                        </div>
+                  {filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center gap-3 p-4 transition-colors hover:bg-accent"
+                    >
+                      <Checkbox
+                        checked={selectedUserIds.has(user.id)}
+                        onCheckedChange={() => handleToggleUser(user.id)}
+                      />
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <User className="w-5 h-5 text-primary" />
                       </div>
-                    )
-                  })}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{user.username}</p>
+                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                      <div className="text-right min-w-[120px]">
+                        <p className="text-sm font-medium">
+                          {user.role === 'ROLE_ADMIN' ? '관리자' : '일반 사용자'}
+                        </p>
+                        <p className="text-xs text-green-600">미소속</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -264,10 +235,10 @@ function OrganizationTreeNode({
             </Button>
             <Button
               onClick={handleAddMembers}
-              disabled={selectedUserIds.size === 0}
+              disabled={selectedUserIds.size === 0 || isSubmitting}
             >
               <UserPlus className="mr-2 h-4 w-4" />
-              추가 ({selectedUserIds.size})
+              {isSubmitting ? '추가 중...' : `추가 (${selectedUserIds.size})`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -282,44 +253,84 @@ function OrganizationTreeNode({
               org={child}
               level={level + 1}
               selectedOrgId={selectedOrgId}
+              selectedUserId={selectedUserId}
               onSelect={onSelect}
+              onSelectUser={onSelectUser}
               users={users}
               organizations={organizations}
             />
           ))}
 
           {/* 소속 사용자 렌더링 */}
-          {orgUsers.map((user) => (
-            <ContextMenu key={`user-${user.id}`}>
-              <ContextMenuTrigger asChild>
-                <div className="ml-4 flex items-center gap-2 py-1.5 px-3 text-sm text-muted-foreground hover:bg-accent rounded cursor-pointer transition-colors">
-                  <span className="w-3" />
-                  <User className="w-3.5 h-3.5" />
-                  <span>{user.username}</span>
-                </div>
-              </ContextMenuTrigger>
-              <ContextMenuContent className="w-48">
-                <ContextMenuItem onClick={() => alert('사용자 정보 수정 준비 중')}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  <span>정보 수정</span>
-                </ContextMenuItem>
-                <ContextMenuItem onClick={() => alert('조직 이동 준비 중')}>
-                  <Move className="mr-2 h-4 w-4" />
-                  <span>조직 이동</span>
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                <ContextMenuItem
-                  onClick={() => alert('팀원 제거 준비 중')}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <UserMinus className="mr-2 h-4 w-4" />
-                  <span>팀원 제거</span>
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
-          ))}
+          {orgUsers.map((user) => {
+            const handleRemoveMember = async () => {
+              const confirmed = await confirm({
+                title: '팀원 제거',
+                description: `${user.username}님을 ${org.name}에서 제거하시겠습니까?`,
+                confirmText: '제거',
+                cancelText: '취소',
+                variant: 'destructive',
+              })
+
+              if (!confirmed) return
+
+              try {
+                await adminApi.removeUserFromOrganization(user.id)
+                await queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+                toast.success(`${user.username}님을 조직에서 제거했습니다.`)
+              } catch (error) {
+                console.error('Failed to remove member:', error)
+                toast.error('팀원 제거에 실패했습니다.')
+              }
+            }
+
+            const isUserSelected = selectedUserId === user.id
+
+            return (
+              <ContextMenu key={`user-${user.id}`}>
+                <ContextMenuTrigger asChild>
+                  <div
+                    className={`ml-4 flex items-center gap-2 py-1.5 px-3 text-sm rounded cursor-pointer transition-colors ${
+                      isUserSelected
+                        ? 'bg-primary text-primary-foreground font-medium'
+                        : 'text-muted-foreground hover:bg-accent'
+                    }`}
+                    onClick={() => {
+                      console.log('User clicked:', user.username, 'User ID:', user.id)
+                      onSelectUser(user.id)
+                    }}
+                  >
+                    <span className="w-3" />
+                    <User className="w-3.5 h-3.5" />
+                    <span>{user.username}</span>
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-48">
+                  <ContextMenuItem onClick={() => alert('사용자 정보 수정 준비 중')}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>정보 수정</span>
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => alert('조직 이동 준비 중')}>
+                    <Move className="mr-2 h-4 w-4" />
+                    <span>조직 이동</span>
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    onClick={handleRemoveMember}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <UserMinus className="mr-2 h-4 w-4" />
+                    <span>팀원 제거</span>
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+            )
+          })}
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog />
     </div>
   )
 }
@@ -328,11 +339,15 @@ export function OrganizationsPage() {
   const { data: organizations = [], isLoading, isError, error, refetch } = useOrganizations()
   const { data: users = [] } = useUsers()
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
 
   // 선택된 조직의 사용자 필터링
   const orgUsers = selectedOrg
     ? users.filter((user) => user.organizationId === selectedOrg.id)
     : []
+
+  // 선택된 사용자
+  const selectedUser = selectedUserId ? users.find(u => u.id === selectedUserId) : null
 
   if (isLoading) {
     return (
@@ -375,7 +390,15 @@ export function OrganizationsPage() {
                   key={org.id}
                   org={org}
                   selectedOrgId={selectedOrg?.id || null}
-                  onSelect={setSelectedOrg}
+                  selectedUserId={selectedUserId}
+                  onSelect={(org) => {
+                    setSelectedOrg(org)
+                    setSelectedUserId(null)
+                  }}
+                  onSelectUser={(userId) => {
+                    setSelectedUserId(userId)
+                    setSelectedOrg(null)
+                  }}
                   users={users}
                   organizations={organizations}
                 />
@@ -387,7 +410,47 @@ export function OrganizationsPage() {
 
       {/* 오른쪽: 상세 정보 */}
       <div className="flex-1 overflow-y-auto">
-        {selectedOrg ? (
+        {selectedUser ? (
+          <div className="p-6">
+            {/* 사용자 정보 */}
+            <div className="mb-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">{selectedUser.username}</h1>
+                  <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 bg-muted/50 rounded-lg p-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">사용자 ID</p>
+                  <p className="font-medium">{selectedUser.id}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">권한</p>
+                  <p className="font-medium">
+                    {selectedUser.role === 'ROLE_ADMIN' ? '관리자' : '일반 사용자'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">소속 조직</p>
+                  <p className="font-medium">
+                    {selectedUser.organizationId
+                      ? organizations.find((o) => o.id === selectedUser.organizationId)?.name || '알 수 없음'
+                      : '미소속'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">상태</p>
+                  <p className="font-medium">{selectedUser.isActive ? '활성' : '비활성'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : selectedOrg ? (
           <div className="p-6">
             {/* 조직 정보 */}
             <div className="mb-6">

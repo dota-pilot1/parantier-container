@@ -10,6 +10,7 @@
         <result property="password" column="password"/>
         <result property="username" column="username"/>
         <result property="role" column="role"/>
+        <result property="organizationId" column="organization_id"/>
         <result property="isActive" column="is_active"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
@@ -21,13 +22,13 @@
     </insert>
 
     <select id="findByEmail" resultMap="UserResultMap">
-        SELECT id, email, password, username, role, is_active, created_at, updated_at
+        SELECT id, email, password, username, role, organization_id, is_active, created_at, updated_at
         FROM users
         WHERE email = #{email}
     </select>
 
     <select id="findById" resultMap="UserResultMap">
-        SELECT id, email, password, username, role, is_active, created_at, updated_at
+        SELECT id, email, password, username, role, organization_id, is_active, created_at, updated_at
         FROM users
         WHERE id = #{id}
     </select>
@@ -37,7 +38,7 @@
     </select>
 
     <select id="findAll" resultMap="UserResultMap">
-        SELECT id, email, password, username, role, is_active, created_at, updated_at
+        SELECT id, email, password, username, role, organization_id, is_active, created_at, updated_at
         FROM users
         ORDER BY created_at DESC
     </select>
@@ -45,6 +46,12 @@
     <update id="updateRole">
         UPDATE users
         SET role = #{role}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateOrganization">
+        UPDATE users
+        SET organization_id = #{organizationId}, updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
 
