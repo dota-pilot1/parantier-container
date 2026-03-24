@@ -207,13 +207,23 @@ function OrganizationTreeNode({
                             ? 'hover:bg-accent cursor-pointer'
                             : 'opacity-50 cursor-not-allowed'
                         }`}
-                        onClick={() => selectable && !isCurrentOrg && handleToggleUser(user.id)}
+                        onClick={() => {
+                          if (selectable && !isCurrentOrg) {
+                            handleToggleUser(user.id)
+                          }
+                        }}
                       >
-                        <Checkbox
-                          checked={selectedUserIds.has(user.id)}
-                          onCheckedChange={() => selectable && !isCurrentOrg && handleToggleUser(user.id)}
-                          disabled={!selectable || isCurrentOrg}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedUserIds.has(user.id)}
+                            onCheckedChange={() => {
+                              if (selectable && !isCurrentOrg) {
+                                handleToggleUser(user.id)
+                              }
+                            }}
+                            disabled={!selectable || isCurrentOrg}
+                          />
+                        </div>
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <User className="w-5 h-5 text-primary" />
                         </div>
