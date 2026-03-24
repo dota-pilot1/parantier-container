@@ -25,17 +25,12 @@ public interface AuthorityRepository {
     /**
      * 권한 생성
      */
-    Authority create(@Param("name") String name,
-                     @Param("description") String description,
-                     @Param("category") String category);
+    void create(Authority authority);
 
     /**
      * 권한 수정
      */
-    Authority update(@Param("id") Long id,
-                     @Param("name") String name,
-                     @Param("description") String description,
-                     @Param("category") String category);
+    void update(Authority authority);
 
     /**
      * 권한 삭제

@@ -54,7 +54,6 @@
     <insert id="create" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO authority (name, description, category, created_at)
         VALUES (#{name}, #{description}, #{category}, NOW())
-        RETURNING id, name, description, category, created_at as createdAt
     </insert>
 
     <!-- 권한 수정 -->

@@ -49,7 +49,13 @@ public class AuthorityService {
      */
     @Transactional
     public Authority createAuthority(String name, String description, String category) {
-        return authorityRepository.create(name, description, category);
+        Authority authority = Authority.builder()
+                .name(name)
+                .description(description)
+                .category(category)
+                .build();
+        authorityRepository.create(authority);
+        return authority;
     }
 
     /**
@@ -57,7 +63,14 @@ public class AuthorityService {
      */
     @Transactional
     public Authority updateAuthority(Long id, String name, String description, String category) {
-        return authorityRepository.update(id, name, description, category);
+        Authority authority = Authority.builder()
+                .id(id)
+                .name(name)
+                .description(description)
+                .category(category)
+                .build();
+        authorityRepository.update(authority);
+        return authority;
     }
 
     /**
