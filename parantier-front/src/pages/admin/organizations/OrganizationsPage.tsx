@@ -1,5 +1,5 @@
 import type { Organization } from '@/types/organization'
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useOrganizations } from '@/features/admin/hooks/useOrganizations'
 import { useUsers } from '@/features/admin/hooks/useUsers'
 import { Button } from '@/shared/ui/button'
@@ -55,20 +55,15 @@ function OrganizationTreeNode({
   const Icon = orgTypeIcons[org.orgType] || Building2
 
   // 조직에 속하지 않은 사용자 필터링
-  const availableUsers = useMemo(() => {
-    return users.filter(user => user.organizationId === null)
-  }, [users])
+  const availableUsers = users.filter(user => user.organizationId === null)
 
   // 검색 필터링
-  const filteredAvailableUsers = useMemo(() => {
-    if (!searchQuery.trim()) return availableUsers
-    const query = searchQuery.toLowerCase()
-    return availableUsers.filter(
-      user =>
-        user.username.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query)
-    )
-  }, [availableUsers, searchQuery])
+  const filteredAvailableUsers = !searchQuery.trim()
+    ? availableUsers
+    : availableUsers.filter(user => {
+        const query = searchQuery.toLowerCase()
+        return user.username.toLowerCase().includes(query) || user.email.toLowerCase().includes(query)
+      })
 
   const handleToggleUser = (userId: number) => {
     const newSet = new Set(selectedUserIds)
