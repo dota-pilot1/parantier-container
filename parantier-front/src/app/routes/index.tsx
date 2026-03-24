@@ -6,7 +6,6 @@ import {
   Outlet,
 } from '@tanstack/react-router'
 import { Header } from '@/widgets/header/Header'
-import { Sidebar } from '@/widgets/sidebar/Sidebar'
 import { MainPage } from '@/pages/main/MainPage'
 import { UsersPage } from '@/pages/admin/users/UsersPage'
 import { MenusPage } from '@/pages/admin/menus/MenusPage'
@@ -54,12 +53,9 @@ const rootRoute = createRootRoute({
   component: () => (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto">
-          <Outlet />
-        </main>
-      </div>
+      <main className="flex-1 overflow-y-auto">
+        <Outlet />
+      </main>
     </div>
   ),
 })
