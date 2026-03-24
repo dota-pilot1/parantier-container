@@ -28,7 +28,7 @@ public class UserAuthorityResponse {
                 .authorityId(userAuthority.getAuthorityId())
                 .authorityName(userAuthority.getAuthority().getName())
                 .authorityDescription(userAuthority.getAuthority().getDescription())
-                .authorityCategory(userAuthority.getAuthority().getCategory())
+                .authorityCategory(userAuthority.getAuthority().getCategory().getName())
                 .grantedAt(userAuthority.getGrantedAt())
                 .grantedBy(userAuthority.getGrantedBy())
                 .expiresAt(userAuthority.getExpiresAt())

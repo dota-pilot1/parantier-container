@@ -60,7 +60,7 @@ public class AuthorityController {
         Authority authority = authorityService.createAuthority(
             request.getName(),
             request.getDescription(),
-            request.getCategory()
+            request.getCategoryId()
         );
         return ResponseEntity.ok(authority);
     }
@@ -77,7 +77,7 @@ public class AuthorityController {
             id,
             request.getName(),
             request.getDescription(),
-            request.getCategory()
+            request.getCategoryId()
         );
         return ResponseEntity.ok(authority);
     }

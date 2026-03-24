@@ -1,14 +1,19 @@
-package com.mapo.palantier.authority.presentation.dto;
+package com.mapo.palantier.authority.domain;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateAuthorityRequest {
+public class Category {
+    private Long id;
     private String name;
     private String description;
-    private Long categoryId;
+    private LocalDateTime createdAt;
 }

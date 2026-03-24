@@ -15,7 +15,11 @@
             <id property="id" column="authority_id"/>
             <result property="name" column="authority_name"/>
             <result property="description" column="authority_description"/>
-            <result property="category" column="authority_category"/>
+            <result property="categoryId" column="authority_category_id"/>
+            <association property="category" javaType="com.mapo.palantier.authority.domain.Category">
+                <result property="name" column="authority_category_name"/>
+                <result property="description" column="authority_category_description"/>
+            </association>
         </association>
     </resultMap>
 
@@ -30,9 +34,12 @@
             ua.notes,
             a.name as authority_name,
             a.description as authority_description,
-            a.category as authority_category
+            a.category_id as authority_category_id,
+            c.name as authority_category_name,
+            c.description as authority_category_description
         FROM user_authority ua
         INNER JOIN authority a ON ua.authority_id = a.id
+        INNER JOIN category c ON a.category_id = c.id
         WHERE ua.user_id = #{userId}
         ORDER BY ua.granted_at DESC
     </select>
@@ -48,9 +55,12 @@
             ua.notes,
             a.name as authority_name,
             a.description as authority_description,
-            a.category as authority_category
+            a.category_id as authority_category_id,
+            c.name as authority_category_name,
+            c.description as authority_category_description
         FROM user_authority ua
         INNER JOIN authority a ON ua.authority_id = a.id
+        INNER JOIN category c ON a.category_id = c.id
         WHERE ua.user_id = #{userId}
           AND (ua.expires_at IS NULL OR ua.expires_at > NOW())
         ORDER BY ua.granted_at DESC

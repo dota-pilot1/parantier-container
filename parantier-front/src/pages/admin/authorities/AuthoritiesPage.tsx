@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { authorityApi } from '@/entities/authority/api/authorityApi'
+import { categoryApi } from '@/entities/authority/api/categoryApi'
 import type { Authority, CreateAuthorityRequest } from '@/types/authority'
+import type { CreateCategoryRequest } from '@/types/category'
 import { Button } from '@/shared/ui/button'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -15,21 +17,48 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 
 export function AuthoritiesPage() {
   const queryClient = useQueryClient()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
   const [editingAuthority, setEditingAuthority] = useState<Authority | null>(null)
-  const [isAddingToCategory, setIsAddingToCategory] = useState(false)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
   const [formData, setFormData] = useState<CreateAuthorityRequest>({
     name: '',
     description: '',
-    category: '',
+    categoryId: 0,
+  })
+  const [categoryFormData, setCategoryFormData] = useState<CreateCategoryRequest>({
+    name: '',
+    description: '',
   })
 
   const { data: authorities = [], isLoading } = useQuery({
     queryKey: ['authorities'],
     queryFn: () => authorityApi.getAll(),
+  })
+
+  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const data = await categoryApi.getAll()
+      console.log('=== 카테고리 API 응답 데이터 ===')
+      console.log('총 카테고리 개수:', data.length)
+      console.log('카테고리 목록:', data)
+      data.forEach((cat, index) => {
+        console.log(`  [${index}] ID: ${cat.id}, Name: ${cat.name}, Description: ${cat.description}`)
+      })
+      console.log('================================')
+      return data
+    },
   })
 
   // 생성 mutation
@@ -76,32 +105,54 @@ export function AuthoritiesPage() {
     },
   })
 
-  const handleOpenDialog = (authority?: Authority, categoryName?: string) => {
+  // 카테고리 생성 mutation
+  const createCategoryMutation = useMutation({
+    mutationFn: (data: CreateCategoryRequest) => categoryApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('카테고리가 생성되었습니다')
+      handleCloseCategoryDialog()
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || error?.message || '카테고리 생성에 실패했습니다'
+      if (message.includes('already exists')) {
+        toast.error('이미 존재하는 카테고리입니다', {
+          description: '다른 이름을 사용해주세요.',
+        })
+      } else {
+        toast.error('카테고리 생성에 실패했습니다', {
+          description: message,
+        })
+      }
+    },
+  })
+
+  const handleOpenDialog = (authority?: Authority, categoryId?: number) => {
     if (authority) {
       setEditingAuthority(authority)
-      setIsAddingToCategory(false)
+      setSelectedCategoryId(null)
       setFormData({
         name: authority.name,
         description: authority.description,
-        category: authority.category,
+        categoryId: authority.categoryId,
       })
-    } else if (categoryName) {
+    } else if (categoryId) {
       // 카테고리에 권한 추가
       setEditingAuthority(null)
-      setIsAddingToCategory(true)
+      setSelectedCategoryId(categoryId)
       setFormData({
         name: '',
         description: '',
-        category: categoryName,
+        categoryId: categoryId,
       })
     } else {
-      // 새 카테고리 추가
+      // 새 권한 추가
       setEditingAuthority(null)
-      setIsAddingToCategory(false)
+      setSelectedCategoryId(null)
       setFormData({
         name: '',
         description: '',
-        category: '',
+        categoryId: 0,
       })
     }
     setIsDialogOpen(true)
@@ -110,11 +161,27 @@ export function AuthoritiesPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false)
     setEditingAuthority(null)
-    setIsAddingToCategory(false)
+    setSelectedCategoryId(null)
     setFormData({
       name: '',
       description: '',
-      category: '',
+      categoryId: 0,
+    })
+  }
+
+  const handleOpenCategoryDialog = () => {
+    setCategoryFormData({
+      name: '',
+      description: '',
+    })
+    setIsCategoryDialogOpen(true)
+  }
+
+  const handleCloseCategoryDialog = () => {
+    setIsCategoryDialogOpen(false)
+    setCategoryFormData({
+      name: '',
+      description: '',
     })
   }
 
@@ -140,25 +207,18 @@ export function AuthoritiesPage() {
   }
 
   const checkCategoryDuplicate = () => {
-    if (!formData.category.trim()) {
+    if (!categoryFormData.name.trim()) {
       toast.error('카테고리 이름을 먼저 입력하세요')
       return
     }
 
-    const existingCategories = Object.keys(
-      authorities.reduce((acc, auth) => {
-        acc[auth.category] = true
-        return acc
-      }, {} as Record<string, boolean>)
-    )
-
-    const isDuplicate = existingCategories.some(
-      (cat) => cat.toLowerCase() === formData.category.toLowerCase()
+    const isDuplicate = categories.some(
+      (cat) => cat.name.toLowerCase() === categoryFormData.name.toLowerCase()
     )
 
     if (isDuplicate) {
       toast.error('이미 존재하는 카테고리입니다', {
-        description: `"${formData.category}" 카테고리가 이미 존재합니다.`,
+        description: `"${categoryFormData.name}" 카테고리가 이미 존재합니다.`,
       })
     } else {
       toast.success('사용 가능한 카테고리 이름입니다')
@@ -168,19 +228,16 @@ export function AuthoritiesPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // 카테고리만 추가하는 경우 (권한 이름/설명이 없는 경우)
-    if (!isAddingToCategory && !editingAuthority && !formData.name && !formData.description) {
-      // 카테고리만 추가하는 경우는 실제로 권한을 생성하지 않음
-      toast.success('카테고리가 준비되었습니다. 이제 권한을 추가해주세요.')
-      handleCloseDialog()
-      return
-    }
-
     if (editingAuthority) {
       updateMutation.mutate({ id: editingAuthority.id, data: formData })
     } else {
       createMutation.mutate(formData)
     }
+  }
+
+  const handleCategorySubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    createCategoryMutation.mutate(categoryFormData)
   }
 
   const handleDelete = (authority: Authority) => {
@@ -189,7 +246,7 @@ export function AuthoritiesPage() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || isCategoriesLoading) {
     return (
       <div className="p-8">
         <div className="flex h-[500px] items-center justify-center">
@@ -199,15 +256,14 @@ export function AuthoritiesPage() {
     )
   }
 
-  // 카테고리별로 그룹화
-  const groupedByCategory = authorities.reduce((acc, auth) => {
-    const category = auth.category || '기타'
-    if (!acc[category]) {
-      acc[category] = []
+  // 모든 카테고리를 먼저 생성하고, 권한을 할당
+  const groupedByCategory = categories.reduce((acc, category) => {
+    acc[category.name] = {
+      categoryId: category.id,
+      authorities: authorities.filter(auth => auth.categoryId === category.id)
     }
-    acc[category].push(auth)
     return acc
-  }, {} as Record<string, typeof authorities>)
+  }, {} as Record<string, { categoryId: number; authorities: typeof authorities }>)
 
   return (
     <>
@@ -219,7 +275,7 @@ export function AuthoritiesPage() {
               시스템 권한을 조회하고 관리합니다.
             </p>
           </div>
-          <Button onClick={() => handleOpenDialog()}>
+          <Button onClick={handleOpenCategoryDialog}>
             <Plus className="w-4 h-4 mr-2" />
             카테고리 추가
           </Button>
@@ -227,12 +283,19 @@ export function AuthoritiesPage() {
 
         <div className="space-y-6">
           {Object.entries(groupedByCategory)
-            .sort(([a], [b]) => b.localeCompare(a)) // 역순 정렬 (최신 카테고리가 위로)
-            .map(([category, auths]) => (
-            <div key={category} className="rounded-lg border bg-card">
+            .sort(([, a], [, b]) => {
+              // createdAt 기준 내림차순 정렬 (최신 카테고리가 위로)
+              const categoryA = categories.find(c => c.id === a.categoryId)
+              const categoryB = categories.find(c => c.id === b.categoryId)
+              if (!categoryA || !categoryB) return 0
+              return new Date(categoryB.createdAt).getTime() - new Date(categoryA.createdAt).getTime()
+            })
+            .map(([categoryName, { categoryId, authorities: auths }]) => {
+              return (
+            <div key={categoryName} className="rounded-lg border bg-card">
               <div className="border-b p-4 bg-muted/50 flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold text-lg">{category}</h2>
+                  <h2 className="font-semibold text-lg">{categoryName}</h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     {auths.length}개의 권한
                   </p>
@@ -240,66 +303,73 @@ export function AuthoritiesPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleOpenDialog(undefined, category)}
+                  onClick={() => handleOpenDialog(undefined, categoryId)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   권한 추가
                 </Button>
               </div>
               <div className="p-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b text-left text-sm">
-                      <th className="pb-2 font-medium">권한 이름</th>
-                      <th className="pb-2 font-medium">설명</th>
-                      <th className="pb-2 font-medium text-right">ID</th>
-                      <th className="pb-2 font-medium text-right">작업</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {auths.map((auth) => (
-                      <tr
-                        key={auth.id}
-                        className="border-b last:border-0 hover:bg-muted/50 transition-colors"
-                      >
-                        <td className="py-3">
-                          <code className="text-sm bg-muted px-2 py-1 rounded">
-                            {auth.name}
-                          </code>
-                        </td>
-                        <td className="py-3 text-sm text-muted-foreground">
-                          {auth.description}
-                        </td>
-                        <td className="py-3 text-sm text-right text-muted-foreground">
-                          #{auth.id}
-                        </td>
-                        <td className="py-3 text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleOpenDialog(auth)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleDelete(auth)}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </td>
+                {auths.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    이 카테고리에 등록된 권한이 없습니다.
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b text-left text-sm">
+                        <th className="pb-2 font-medium">권한 이름</th>
+                        <th className="pb-2 font-medium">설명</th>
+                        <th className="pb-2 font-medium text-right">ID</th>
+                        <th className="pb-2 font-medium text-right">작업</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {auths.map((auth) => (
+                          <tr
+                            key={auth.id}
+                            className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                          >
+                            <td className="py-3">
+                              <code className="text-sm bg-muted px-2 py-1 rounded">
+                                {auth.name}
+                              </code>
+                            </td>
+                            <td className="py-3 text-sm text-muted-foreground">
+                              {auth.description}
+                            </td>
+                            <td className="py-3 text-sm text-right text-muted-foreground">
+                              #{auth.id}
+                            </td>
+                            <td className="py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleOpenDialog(auth)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleDelete(auth)}
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
-          ))}
+              )
+            })}
         </div>
 
         {authorities.length === 0 && (
@@ -311,83 +381,72 @@ export function AuthoritiesPage() {
         )}
       </div>
 
-      {/* 카테고리/권한 추가/수정 다이얼로그 */}
+      {/* 권한 추가/수정 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingAuthority
-                ? '권한 수정'
-                : isAddingToCategory
-                ? `${formData.category} 카테고리에 권한 추가`
-                : '새 카테고리 추가'}
+              {editingAuthority ? '권한 수정' : '권한 추가'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="category">카테고리</Label>
+                <Select
+                  value={formData.categoryId.toString()}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, categoryId: parseInt(value) })
+                  }
+                  disabled={selectedCategoryId !== null}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="카테고리를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="name">권한 이름</Label>
                 <div className="flex gap-2">
                   <Input
-                    id="category"
-                    placeholder="예: PROJECT"
-                    value={formData.category}
+                    id="name"
+                    placeholder="예: PROJECT:CREATE"
+                    value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, category: e.target.value })
+                      setFormData({ ...formData, name: e.target.value })
                     }
-                    disabled={isAddingToCategory}
                     required
                   />
-                  {!isAddingToCategory && !editingAuthority && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={checkCategoryDuplicate}
-                    >
-                      중복 체크
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={checkDuplicate}
+                  >
+                    중복 체크
+                  </Button>
                 </div>
               </div>
 
-              {/* 권한 추가 모드일 때만 권한 이름/설명 입력 */}
-              {(isAddingToCategory || editingAuthority) && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="name">권한 이름</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="name"
-                        placeholder="예: PROJECT:CREATE"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={checkDuplicate}
-                      >
-                        중복 체크
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">설명</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="권한에 대한 설명을 입력하세요"
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({ ...formData, description: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                </>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="description">설명</Label>
+                <Textarea
+                  id="description"
+                  placeholder="권한에 대한 설명을 입력하세요"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  required
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button
@@ -402,6 +461,68 @@ export function AuthoritiesPage() {
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
                 {editingAuthority ? '수정' : '추가'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 카테고리 추가 다이얼로그 */}
+      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>새 카테고리 추가</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCategorySubmit}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="categoryName">카테고리 이름</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="categoryName"
+                    placeholder="예: PROJECT"
+                    value={categoryFormData.name}
+                    onChange={(e) =>
+                      setCategoryFormData({ ...categoryFormData, name: e.target.value })
+                    }
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={checkCategoryDuplicate}
+                  >
+                    중복 체크
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="categoryDescription">설명</Label>
+                <Textarea
+                  id="categoryDescription"
+                  placeholder="카테고리에 대한 설명을 입력하세요"
+                  value={categoryFormData.description}
+                  onChange={(e) =>
+                    setCategoryFormData({ ...categoryFormData, description: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseCategoryDialog}
+              >
+                취소
+              </Button>
+              <Button
+                type="submit"
+                disabled={createCategoryMutation.isPending}
+              >
+                추가
               </Button>
             </DialogFooter>
           </form>

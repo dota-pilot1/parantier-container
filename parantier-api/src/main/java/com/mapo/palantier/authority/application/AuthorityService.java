@@ -48,11 +48,11 @@ public class AuthorityService {
      * 권한 생성
      */
     @Transactional
-    public Authority createAuthority(String name, String description, String category) {
+    public Authority createAuthority(String name, String description, Long categoryId) {
         Authority authority = Authority.builder()
                 .name(name)
                 .description(description)
-                .category(category)
+                .categoryId(categoryId)
                 .build();
         authorityRepository.create(authority);
         return authority;
@@ -62,12 +62,12 @@ public class AuthorityService {
      * 권한 수정
      */
     @Transactional
-    public Authority updateAuthority(Long id, String name, String description, String category) {
+    public Authority updateAuthority(Long id, String name, String description, Long categoryId) {
         Authority authority = Authority.builder()
                 .id(id)
                 .name(name)
                 .description(description)
-                .category(category)
+                .categoryId(categoryId)
                 .build();
         authorityRepository.update(authority);
         return authority;

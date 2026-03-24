@@ -9,51 +9,74 @@
         SELECT a.name
         FROM authority a
         INNER JOIN role_authority ra ON a.id = ra.authority_id
+        INNER JOIN category c ON a.category_id = c.id
         WHERE ra.role = #{role}
-        ORDER BY a.category, a.name
+        ORDER BY c.name, a.name
     </select>
 
+    <!-- ResultMap 정의: Authority와 Category 조인 -->
+    <resultMap id="authorityWithCategory" type="com.mapo.palantier.authority.domain.Authority">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="createdAt" column="created_at"/>
+        <association property="category" javaType="com.mapo.palantier.authority.domain.Category">
+            <result property="name" column="category_name"/>
+            <result property="description" column="category_description"/>
+        </association>
+    </resultMap>
+
     <!-- 모든 권한 조회 -->
-    <select id="findAll" resultType="com.mapo.palantier.authority.domain.Authority">
+    <select id="findAll" resultMap="authorityWithCategory">
         SELECT
-            id,
-            name,
-            description,
-            category,
-            created_at as createdAt
-        FROM authority
-        ORDER BY category, name
+            a.id,
+            a.name,
+            a.description,
+            a.category_id,
+            a.created_at,
+            c.name as category_name,
+            c.description as category_description
+        FROM authority a
+        INNER JOIN category c ON a.category_id = c.id
+        ORDER BY c.name, a.name
     </select>
 
     <!-- 카테고리별 권한 조회 -->
-    <select id="findByCategory" resultType="com.mapo.palantier.authority.domain.Authority">
+    <select id="findByCategory" resultMap="authorityWithCategory">
         SELECT
-            id,
-            name,
-            description,
-            category,
-            created_at as createdAt
-        FROM authority
-        WHERE category = #{category}
-        ORDER BY name
+            a.id,
+            a.name,
+            a.description,
+            a.category_id,
+            a.created_at,
+            c.name as category_name,
+            c.description as category_description
+        FROM authority a
+        INNER JOIN category c ON a.category_id = c.id
+        WHERE c.name = #{category}
+        ORDER BY a.name
     </select>
 
     <!-- ID로 권한 조회 -->
-    <select id="findById" resultType="com.mapo.palantier.authority.domain.Authority">
+    <select id="findById" resultMap="authorityWithCategory">
         SELECT
-            id,
-            name,
-            description,
-            category,
-            created_at as createdAt
-        FROM authority
-        WHERE id = #{id}
+            a.id,
+            a.name,
+            a.description,
+            a.category_id,
+            a.created_at,
+            c.name as category_name,
+            c.description as category_description
+        FROM authority a
+        INNER JOIN category c ON a.category_id = c.id
+        WHERE a.id = #{id}
     </select>
 
     <!-- 권한 생성 -->
     <insert id="create" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO authority (name, description, category, created_at)
-        VALUES (#{name}, #{description}, #{category}, NOW())
+        INSERT INTO authority (name, description, category_id, created_at)
+        VALUES (#{name}, #{description}, #{categoryId}, NOW())
     </insert>
 
     <!-- 권한 수정 -->
@@ -61,7 +84,7 @@
         UPDATE authority
         SET name = #{name},
             description = #{description},
-            category = #{category}
+            category_id = #{categoryId}
         WHERE id = #{id}
     </update>
 

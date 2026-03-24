@@ -1,15 +1,18 @@
+import type { Category } from './category'
+
 export interface Authority {
   id: number
   name: string
   description: string
-  category: string
+  categoryId: number
+  category: Category
   createdAt: string
 }
 
 export interface CreateAuthorityRequest {
   name: string
   description: string
-  category: string
+  categoryId: number
 }
 
 export interface UpdateRoleMappingRequest {

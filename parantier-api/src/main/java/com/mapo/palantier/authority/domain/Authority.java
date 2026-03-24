@@ -15,6 +15,7 @@ public class Authority {
     private Long id;
     private String name;         // 예: PROJECT:CREATE
     private String description;
-    private String category;     // 예: MENU, PROJECT, USER
+    private Long categoryId;     // 카테고리 ID (FK)
+    private Category category;   // 카테고리 객체 (JOIN 결과)
     private LocalDateTime createdAt;
 }
