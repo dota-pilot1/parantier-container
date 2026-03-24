@@ -33,4 +33,9 @@ public interface UserAuthorityRepository {
      * 특정 권한이 사용자에게 있는지 확인
      */
     boolean exists(Long userId, Long authorityId);
+
+    /**
+     * JWT 생성용: 사용자 ID로 권한 이름 목록 조회
+     */
+    List<String> findAuthorityNamesByUserId(Long userId);
 }

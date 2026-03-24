@@ -42,4 +42,9 @@ public class UserAuthorityRepositoryImpl implements UserAuthorityRepository {
     public boolean exists(Long userId, Long authorityId) {
         return mapper.exists(userId, authorityId) > 0;
     }
+
+    @Override
+    public List<String> findAuthorityNamesByUserId(Long userId) {
+        return mapper.findAuthorityNamesByUserId(userId);
+    }
 }

@@ -62,7 +62,7 @@ public class AuthService {
         }
 
         // 4. 액세스 토큰 및 리프레시 토큰 생성
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail());
 
         // 5. 기존 리프레시 토큰 삭제 (1명당 1개의 토큰만 유지)
@@ -100,7 +100,7 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException(ErrorCode.USER_NOT_FOUND));
 
         // 5. 새 액세스 토큰 발급
-        return jwtTokenProvider.generateAccessToken(user.getEmail(), user.getRole().name());
+        return jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
     }
 
     @Transactional

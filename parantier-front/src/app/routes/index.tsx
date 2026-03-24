@@ -12,6 +12,7 @@ import { MenusPage } from '@/pages/admin/menus/MenusPage'
 import { WorkspacePage } from '@/pages/admin/workspace/WorkspacePage'
 import { AuthoritiesPage } from '@/pages/admin/authorities/AuthoritiesPage'
 import { OrganizationsPage } from '@/pages/admin/organizations/OrganizationsPage'
+import { RolesPage } from '@/pages/admin/roles/RolesPage'
 import { authStore } from '@/entities/user/model/authStore'
 import { toast } from 'sonner'
 
@@ -23,6 +24,27 @@ const requireAuth = () => {
     toast.error('로그인이 필요합니다')
     throw redirect({ to: '/dashboard' })
   }
+}
+
+// Role 기반 권한 체크 (관리자 페이지 접근용)
+const requireRole = (requiredRole: string) => {
+  const auth = authStore.state
+
+  if (!auth.isAuthenticated) {
+    toast.error('로그인이 필요합니다')
+    throw redirect({ to: '/dashboard' })
+  }
+
+  // User role 체크
+  if (auth.user?.role === requiredRole) {
+    return
+  }
+
+  // 권한이 없으면 접근 차단
+  toast.error('접근 권한이 없습니다', {
+    description: `관리자만 접근할 수 있습니다.`,
+  })
+  throw redirect({ to: '/dashboard' })
 }
 
 // Authority 기반 권한 체크 (비동기 처리 추가)
@@ -88,44 +110,52 @@ const dashboardAliasRoute = createRoute({
   component: MainPage,
 })
 
-// Admin: 유저 관리 (AdminLayout 없이 직접 연결)
+// Admin: 유저 관리 (ROLE_ADMIN으로 페이지 접근 제어)
 const adminUsersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/users',
-  beforeLoad: () => requireAuthority('USER:READ'),
+  beforeLoad: () => requireRole('ROLE_ADMIN'),
   component: UsersPage,
 })
 
-// 메뉴 관리 (별도 페이지)
+// 메뉴 관리 (ROLE_ADMIN으로 페이지 접근 제어)
 const adminMenusRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/menus',
-  beforeLoad: () => requireAuthority('MENU:ADMIN:WRITE'),
+  beforeLoad: () => requireRole('ROLE_ADMIN'),
   component: MenusPage,
 })
 
-// 업무 관리 (별도 페이지, 자체 사이드바)
+// 업무 관리 (ROLE_ADMIN으로 페이지 접근 제어)
 const adminWorkspaceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/workspace',
-  beforeLoad: () => requireAuthority('WORKSPACE:READ'),
+  beforeLoad: () => requireRole('ROLE_ADMIN'),
   component: WorkspacePage,
 })
 
-// 권한 관리
+// 권한 관리 (ROLE_ADMIN으로 페이지 접근 제어)
 const adminAuthoritiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/authorities',
-  beforeLoad: () => requireAuthority('AUTHORITY:READ'),
+  beforeLoad: () => requireRole('ROLE_ADMIN'),
   component: AuthoritiesPage,
 })
 
-// 조직 관리
+// 조직 관리 (ROLE_ADMIN으로 페이지 접근 제어)
 const adminOrganizationsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/organizations',
-  beforeLoad: () => requireAuthority('ORGANIZATION:READ'),
+  beforeLoad: () => requireRole('ROLE_ADMIN'),
   component: OrganizationsPage,
+})
+
+// 역할 관리 (ROLE_ADMIN으로 페이지 접근 제어)
+const adminRolesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/roles',
+  beforeLoad: () => requireRole('ROLE_ADMIN'),
+  component: RolesPage,
 })
 
 // Route Tree
@@ -137,6 +167,7 @@ const routeTree = rootRoute.addChildren([
   adminWorkspaceRoute,
   adminAuthoritiesRoute,
   adminOrganizationsRoute,
+  adminRolesRoute,
 ])
 
 // Router 생성

@@ -20,4 +20,6 @@ public interface UserAuthorityMapper {
     void deleteAll(@Param("userId") Long userId);
 
     int exists(@Param("userId") Long userId, @Param("authorityId") Long authorityId);
+
+    List<String> findAuthorityNamesByUserId(@Param("userId") Long userId);
 }
