@@ -3,7 +3,14 @@ import { useState } from 'react'
 import { useOrganizations } from '@/features/admin/hooks/useOrganizations'
 import { useUsers } from '@/features/admin/hooks/useUsers'
 import { Button } from '@/shared/ui/button'
-import { Building2, Users as UsersIcon, Folder, User } from 'lucide-react'
+import { Building2, Users as UsersIcon, Folder, User, UserPlus, Edit, Trash2 } from 'lucide-react'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/shared/ui/context-menu'
 
 // 조직 타입별 아이콘
 const orgTypeIcons: Record<string, typeof Building2> = {
@@ -35,36 +42,58 @@ function OrganizationTreeNode({
 
   return (
     <div className="ml-4">
-      <div
-        className={`flex items-center gap-2 py-2 px-3 rounded cursor-pointer transition-colors ${
-          isSelected
-            ? 'bg-primary text-primary-foreground font-medium'
-            : 'hover:bg-accent'
-        }`}
-        onClick={() => {
-          onSelect(org)
-          if (hasContent) {
-            setIsExpanded(!isExpanded)
-          }
-        }}
-      >
-        {hasContent && (
-          <span className="text-sm">{isExpanded ? '▼' : '▶'}</span>
-        )}
-        {!hasContent && <span className="w-3" />}
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            className={`flex items-center gap-2 py-2 px-3 rounded cursor-pointer transition-colors ${
+              isSelected
+                ? 'bg-primary text-primary-foreground font-medium'
+                : 'hover:bg-accent'
+            }`}
+            onClick={() => {
+              onSelect(org)
+              if (hasContent) {
+                setIsExpanded(!isExpanded)
+              }
+            }}
+          >
+            {hasContent && (
+              <span className="text-sm">{isExpanded ? '▼' : '▶'}</span>
+            )}
+            {!hasContent && <span className="w-3" />}
 
-        <Icon className="w-4 h-4" />
+            <Icon className="w-4 h-4" />
 
-        <div className="flex-1">
-          <div className="text-sm">{org.name}</div>
-        </div>
+            <div className="flex-1">
+              <div className="text-sm">{org.name}</div>
+            </div>
 
-        {orgUsers.length > 0 && (
-          <span className="text-xs text-muted-foreground">
-            {orgUsers.length}명
-          </span>
-        )}
-      </div>
+            {orgUsers.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {orgUsers.length}명
+              </span>
+            )}
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-48">
+          <ContextMenuItem onClick={() => alert('팀원 추가 기능 준비 중')}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            <span>팀원 추가</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => alert('조직 수정 기능 준비 중')}>
+            <Edit className="mr-2 h-4 w-4" />
+            <span>조직 수정</span>
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            onClick={() => alert('조직 삭제 기능 준비 중')}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            <span>조직 삭제</span>
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
 
       {isExpanded && hasContent && (
         <div className="ml-2 border-l border-border">
