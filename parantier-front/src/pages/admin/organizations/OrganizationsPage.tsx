@@ -36,12 +36,14 @@ function OrganizationTreeNode({
   selectedOrgId,
   onSelect,
   users,
+  organizations,
 }: {
   org: Organization
   level?: number
   selectedOrgId: number | null
   onSelect: (org: Organization) => void
   users: Array<{ id: number; username: string; email: string; organizationId: number | null; role: string; isActive: boolean }>
+  organizations: Organization[]
 }) {
   const [isExpanded, setIsExpanded] = useState(level < 2) // 기본적으로 2단계까지 펼침
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false)
@@ -54,16 +56,40 @@ function OrganizationTreeNode({
   const isSelected = selectedOrgId === org.id
   const Icon = orgTypeIcons[org.orgType] || Building2
 
-  // 조직에 속하지 않은 사용자 필터링
-  const availableUsers = users.filter(user => user.organizationId === null)
-
-  // 검색 필터링
-  const filteredAvailableUsers = !searchQuery.trim()
-    ? availableUsers
-    : availableUsers.filter(user => {
+  // 검색 필터링 (모든 사용자 대상)
+  const filteredUsers = !searchQuery.trim()
+    ? users
+    : users.filter(user => {
         const query = searchQuery.toLowerCase()
         return user.username.toLowerCase().includes(query) || user.email.toLowerCase().includes(query)
       })
+
+  // 현재 조직에 속하지 않은 사용자만 선택 가능
+  const isUserSelectable = (userId: number) => {
+    const user = users.find(u => u.id === userId)
+    return user && (user.organizationId === null || user.organizationId === org.id)
+  }
+
+  // 사용자의 조직 이름 찾기
+  const getUserOrgName = (userId: number) => {
+    const user = users.find(u => u.id === userId)
+    if (!user || !user.organizationId) return null
+
+    // 재귀적으로 조직 찾기
+    const findOrgById = (orgs: Organization[], id: number): Organization | null => {
+      for (const org of orgs) {
+        if (org.id === id) return org
+        if (org.children) {
+          const found = findOrgById(org.children, id)
+          if (found) return found
+        }
+      }
+      return null
+    }
+
+    const userOrg = findOrgById(organizations, user.organizationId)
+    return userOrg?.name || '알 수 없음'
+  }
 
   const handleToggleUser = (userId: number) => {
     const newSet = new Set(selectedUserIds)
@@ -140,11 +166,11 @@ function OrganizationTreeNode({
 
       {/* 팀원 추가 다이얼로그 */}
       <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>팀원 추가 - {org.name}</DialogTitle>
             <DialogDescription>
-              조직에 추가할 사용자를 선택하세요. 현재 조직에 속하지 않은 사용자만 표시됩니다.
+              조직에 추가할 사용자를 선택하세요. 모든 사용자가 표시되며, 현재 소속 조직을 확인할 수 있습니다.
             </DialogDescription>
           </DialogHeader>
 
@@ -161,37 +187,55 @@ function OrganizationTreeNode({
             </div>
 
             {/* 사용자 목록 */}
-            <div className="border rounded-lg max-h-96 overflow-y-auto">
-              {filteredAvailableUsers.length === 0 ? (
+            <div className="border rounded-lg max-h-[50vh] overflow-y-auto">
+              {filteredUsers.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
-                  {searchQuery
-                    ? '검색 결과가 없습니다.'
-                    : '추가 가능한 사용자가 없습니다.'}
+                  검색 결과가 없습니다.
                 </div>
               ) : (
                 <div className="divide-y">
-                  {filteredAvailableUsers.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center gap-3 p-3 hover:bg-accent cursor-pointer transition-colors"
-                      onClick={() => handleToggleUser(user.id)}
-                    >
-                      <Checkbox
-                        checked={selectedUserIds.has(user.id)}
-                        onCheckedChange={() => handleToggleUser(user.id)}
-                      />
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-primary" />
+                  {filteredUsers.map((user) => {
+                    const orgName = getUserOrgName(user.id)
+                    const selectable = isUserSelectable(user.id)
+                    const isCurrentOrg = user.organizationId === org.id
+
+                    return (
+                      <div
+                        key={user.id}
+                        className={`flex items-center gap-3 p-4 transition-colors ${
+                          selectable && !isCurrentOrg
+                            ? 'hover:bg-accent cursor-pointer'
+                            : 'opacity-50 cursor-not-allowed'
+                        }`}
+                        onClick={() => selectable && !isCurrentOrg && handleToggleUser(user.id)}
+                      >
+                        <Checkbox
+                          checked={selectedUserIds.has(user.id)}
+                          onCheckedChange={() => selectable && !isCurrentOrg && handleToggleUser(user.id)}
+                          disabled={!selectable || isCurrentOrg}
+                        />
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">{user.username}</p>
+                          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <div className="text-right min-w-[120px]">
+                          <p className="text-sm font-medium">
+                            {user.role === 'ROLE_ADMIN' ? '관리자' : '일반 사용자'}
+                          </p>
+                          {orgName ? (
+                            <p className="text-xs text-muted-foreground">
+                              {isCurrentOrg ? '이미 소속됨' : `소속: ${orgName}`}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-green-600">미소속</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{user.username}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {user.role === 'ROLE_ADMIN' ? '관리자' : '일반'}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -230,6 +274,7 @@ function OrganizationTreeNode({
               selectedOrgId={selectedOrgId}
               onSelect={onSelect}
               users={users}
+              organizations={organizations}
             />
           ))}
 
@@ -322,6 +367,7 @@ export function OrganizationsPage() {
                   selectedOrgId={selectedOrg?.id || null}
                   onSelect={setSelectedOrg}
                   users={users}
+                  organizations={organizations}
                 />
               ))}
             </div>
