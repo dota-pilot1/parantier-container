@@ -20,6 +20,7 @@ export function AuthoritiesPage() {
   const queryClient = useQueryClient()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingAuthority, setEditingAuthority] = useState<Authority | null>(null)
+  const [isAddingToCategory, setIsAddingToCategory] = useState(false)
   const [formData, setFormData] = useState<CreateAuthorityRequest>({
     name: '',
     description: '',
@@ -78,6 +79,7 @@ export function AuthoritiesPage() {
   const handleOpenDialog = (authority?: Authority) => {
     if (authority) {
       setEditingAuthority(authority)
+      setIsAddingToCategory(false)
       setFormData({
         name: authority.name,
         description: authority.description,
@@ -85,6 +87,7 @@ export function AuthoritiesPage() {
       })
     } else {
       setEditingAuthority(null)
+      setIsAddingToCategory(false)
       setFormData({
         name: '',
         description: '',
@@ -97,6 +100,7 @@ export function AuthoritiesPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false)
     setEditingAuthority(null)
+    setIsAddingToCategory(false)
     setFormData({
       name: '',
       description: '',
@@ -171,6 +175,7 @@ export function AuthoritiesPage() {
                   onClick={() => {
                     setFormData({ name: '', description: '', category })
                     setEditingAuthority(null)
+                    setIsAddingToCategory(true)
                     setIsDialogOpen(true)
                   }}
                 >
@@ -250,7 +255,7 @@ export function AuthoritiesPage() {
             <DialogTitle>
               {editingAuthority
                 ? '권한 수정'
-                : formData.category
+                : isAddingToCategory
                 ? `${formData.category} 카테고리에 권한 추가`
                 : '새 카테고리 추가'}
             </DialogTitle>
@@ -266,10 +271,10 @@ export function AuthoritiesPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
                   }
-                  disabled={!!formData.category && !editingAuthority}
+                  disabled={isAddingToCategory}
                   required
                 />
-                {formData.category && !editingAuthority && (
+                {isAddingToCategory && (
                   <p className="text-xs text-muted-foreground">
                     카테고리가 자동으로 설정되었습니다
                   </p>
@@ -284,9 +289,9 @@ export function AuthoritiesPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  required={!!formData.category}
+                  required={isAddingToCategory}
                 />
-                {!formData.name && formData.category && (
+                {!isAddingToCategory && !formData.name && (
                   <p className="text-xs text-muted-foreground">
                     카테고리만 추가하려면 비워두세요
                   </p>
@@ -301,7 +306,7 @@ export function AuthoritiesPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  required={!!formData.name}
+                  required={isAddingToCategory}
                 />
               </div>
             </div>
