@@ -12,20 +12,24 @@ const orgTypeIcons: Record<string, typeof Building2> = {
   TEAM: UsersIcon,
 }
 
-// 재귀적으로 트리 노드 렌더링 (선택 가능)
+// 재귀적으로 트리 노드 렌더링 (조직 + 사용자)
 function OrganizationTreeNode({
   org,
   level = 0,
   selectedOrgId,
   onSelect,
+  users,
 }: {
   org: Organization
   level?: number
   selectedOrgId: number | null
   onSelect: (org: Organization) => void
+  users: Array<{ id: number; username: string; email: string; organizationId: number | null; role: string; isActive: boolean }>
 }) {
   const [isExpanded, setIsExpanded] = useState(level < 2) // 기본적으로 2단계까지 펼침
   const hasChildren = org.children && org.children.length > 0
+  const orgUsers = users.filter(user => user.organizationId === org.id)
+  const hasContent = hasChildren || orgUsers.length > 0
   const isSelected = selectedOrgId === org.id
   const Icon = orgTypeIcons[org.orgType] || Building2
 
@@ -39,25 +43,32 @@ function OrganizationTreeNode({
         }`}
         onClick={() => {
           onSelect(org)
-          if (hasChildren) {
+          if (hasContent) {
             setIsExpanded(!isExpanded)
           }
         }}
       >
-        {hasChildren && (
+        {hasContent && (
           <span className="text-sm">{isExpanded ? '▼' : '▶'}</span>
         )}
-        {!hasChildren && <span className="w-3" />}
+        {!hasContent && <span className="w-3" />}
 
         <Icon className="w-4 h-4" />
 
         <div className="flex-1">
           <div className="text-sm">{org.name}</div>
         </div>
+
+        {orgUsers.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {orgUsers.length}명
+          </span>
+        )}
       </div>
 
-      {isExpanded && hasChildren && (
+      {isExpanded && hasContent && (
         <div className="ml-2 border-l border-border">
+          {/* 하위 조직 먼저 렌더링 */}
           {org.children?.map((child) => (
             <OrganizationTreeNode
               key={child.id}
@@ -65,7 +76,20 @@ function OrganizationTreeNode({
               level={level + 1}
               selectedOrgId={selectedOrgId}
               onSelect={onSelect}
+              users={users}
             />
+          ))}
+
+          {/* 소속 사용자 렌더링 */}
+          {orgUsers.map((user) => (
+            <div
+              key={`user-${user.id}`}
+              className="ml-4 flex items-center gap-2 py-1.5 px-3 text-sm text-muted-foreground"
+            >
+              <span className="w-3" />
+              <User className="w-3.5 h-3.5" />
+              <span>{user.username}</span>
+            </div>
           ))}
         </div>
       )}
@@ -125,6 +149,7 @@ export function OrganizationsPage() {
                   org={org}
                   selectedOrgId={selectedOrg?.id || null}
                   onSelect={setSelectedOrg}
+                  users={users}
                 />
               ))}
             </div>
