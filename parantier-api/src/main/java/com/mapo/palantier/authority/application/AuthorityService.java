@@ -37,4 +37,36 @@ public class AuthorityService {
     public List<Authority> getAuthoritiesByCategory(String category) {
         return authorityRepository.findByCategory(category);
     }
+
+    /**
+     * 권한 생성
+     */
+    @Transactional
+    public Authority createAuthority(String name, String description, String category) {
+        return authorityRepository.create(name, description, category);
+    }
+
+    /**
+     * 권한 수정
+     */
+    @Transactional
+    public Authority updateAuthority(Long id, String name, String description, String category) {
+        return authorityRepository.update(id, name, description, category);
+    }
+
+    /**
+     * 권한 삭제
+     */
+    @Transactional
+    public void deleteAuthority(Long id) {
+        authorityRepository.delete(id);
+    }
+
+    /**
+     * 역할-권한 매핑 업데이트
+     */
+    @Transactional
+    public void updateRoleAuthorities(String role, List<Long> authorityIds) {
+        authorityRepository.updateRoleAuthorities(role, authorityIds);
+    }
 }

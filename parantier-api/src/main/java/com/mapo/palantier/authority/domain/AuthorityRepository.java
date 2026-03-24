@@ -21,4 +21,51 @@ public interface AuthorityRepository {
      * 카테고리별 권한 조회
      */
     List<Authority> findByCategory(@Param("category") String category);
+
+    /**
+     * 권한 생성
+     */
+    Authority create(@Param("name") String name,
+                     @Param("description") String description,
+                     @Param("category") String category);
+
+    /**
+     * 권한 수정
+     */
+    Authority update(@Param("id") Long id,
+                     @Param("name") String name,
+                     @Param("description") String description,
+                     @Param("category") String category);
+
+    /**
+     * 권한 삭제
+     */
+    void delete(@Param("id") Long id);
+
+    /**
+     * 역할-권한 매핑 삭제 (특정 역할)
+     */
+    void deleteRoleAuthorities(@Param("role") String role);
+
+    /**
+     * 역할-권한 매핑 추가
+     */
+    void insertRoleAuthority(@Param("role") String role, @Param("authorityId") Long authorityId);
+
+    /**
+     * 역할-권한 매핑 업데이트
+     */
+    default void updateRoleAuthorities(String role, List<Long> authorityIds) {
+        // 기존 매핑 삭제
+        deleteRoleAuthorities(role);
+        // 새 매핑 추가
+        for (Long authorityId : authorityIds) {
+            insertRoleAuthority(role, authorityId);
+        }
+    }
+
+    /**
+     * ID로 권한 조회
+     */
+    Authority findById(@Param("id") Long id);
 }
