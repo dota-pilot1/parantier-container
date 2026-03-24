@@ -46,13 +46,13 @@ function RoleCellRenderer(props: ICellRendererParams<UserResponse>) {
   }
 
   return (
-    <div className="flex items-center h-full py-2 px-1">
+    <div className="flex items-center h-full py-1 px-1">
       <Select
         value={props.value}
         onValueChange={handleRoleChange}
         disabled={isPending}
       >
-        <SelectTrigger className="h-10 text-sm border-gray-300">
+        <SelectTrigger className="h-8 w-32 text-sm border-gray-300">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -259,10 +259,10 @@ export function UsersPage() {
           suppressPaginationPanel={false}
           localeText={localeText}
           theme={themeQuartz.withParams({
-            headerHeight: 52,
-            rowHeight: 60,
-            fontSize: 14,
-            headerFontSize: 14,
+            headerHeight: 48,
+            rowHeight: 48,
+            fontSize: 13,
+            headerFontSize: 13,
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
           })}
         />
