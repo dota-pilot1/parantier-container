@@ -12,4 +12,5 @@ public interface UserRepository {
     boolean existsByEmail(String email);
     List<User> findAll();
     void updateRole(Long id, UserRole role);
+    void updateOrganization(@Param("id") Long id, @Param("organizationId") Long organizationId);
 }

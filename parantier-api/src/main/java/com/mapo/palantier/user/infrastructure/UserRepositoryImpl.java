@@ -44,4 +44,9 @@ public class UserRepositoryImpl implements UserRepository {
     public void updateRole(Long id, UserRole role) {
         userMapper.updateRole(id, role);
     }
+
+    @Override
+    public void updateOrganization(Long id, Long organizationId) {
+        userMapper.updateOrganization(id, organizationId);
+    }
 }

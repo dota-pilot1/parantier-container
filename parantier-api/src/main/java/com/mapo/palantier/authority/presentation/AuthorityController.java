@@ -2,14 +2,20 @@ package com.mapo.palantier.authority.presentation;
 
 import com.mapo.palantier.authority.application.AuthorityService;
 import com.mapo.palantier.authority.domain.Authority;
+import com.mapo.palantier.authority.domain.UserAuthority;
 import com.mapo.palantier.authority.presentation.dto.CreateAuthorityRequest;
+import com.mapo.palantier.authority.presentation.dto.GrantUserAuthorityRequest;
 import com.mapo.palantier.authority.presentation.dto.UpdateRoleMappingRequest;
+import com.mapo.palantier.authority.presentation.dto.UserAuthorityResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -95,5 +101,74 @@ public class AuthorityController {
     ) {
         authorityService.updateRoleAuthorities(role, request.getAuthorityIds());
         return ResponseEntity.ok().build();
+    }
+
+    // ==================== 사용자별 권한 관리 ====================
+
+    /**
+     * 사용자의 개별 권한 목록 조회
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<UserAuthorityResponse>> getUserAuthorities(@PathVariable Long userId) {
+        List<UserAuthority> userAuthorities = authorityService.getUserAuthorities(userId);
+        List<UserAuthorityResponse> response = userAuthorities.stream()
+                .map(UserAuthorityResponse::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 사용자의 유효한 권한만 조회
+     */
+    @GetMapping("/user/{userId}/valid")
+    public ResponseEntity<List<UserAuthorityResponse>> getValidUserAuthorities(@PathVariable Long userId) {
+        List<UserAuthority> userAuthorities = authorityService.getValidUserAuthorities(userId);
+        List<UserAuthorityResponse> response = userAuthorities.stream()
+                .map(UserAuthorityResponse::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 사용자에게 권한 부여
+     */
+    @PostMapping("/user/{userId}")
+    public ResponseEntity<Void> grantUserAuthority(
+            @PathVariable Long userId,
+            @RequestBody GrantUserAuthorityRequest request,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        // TODO: userDetails에서 실제 사용자 ID를 가져와야 함 (현재는 임시로 1L 사용)
+        Long grantedBy = 1L;
+
+        authorityService.grantUserAuthority(
+                userId,
+                request.getAuthorityId(),
+                grantedBy,
+                request.getExpiresAt(),
+                request.getNotes()
+        );
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 사용자 권한 회수
+     */
+    @DeleteMapping("/user/{userId}/authority/{authorityId}")
+    public ResponseEntity<Void> revokeUserAuthority(
+            @PathVariable Long userId,
+            @PathVariable Long authorityId
+    ) {
+        authorityService.revokeUserAuthority(userId, authorityId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 사용자의 모든 개별 권한 회수
+     */
+    @DeleteMapping("/user/{userId}")
+    public ResponseEntity<Void> revokeAllUserAuthorities(@PathVariable Long userId) {
+        authorityService.revokeAllUserAuthorities(userId);
+        return ResponseEntity.noContent().build();
     }
 }

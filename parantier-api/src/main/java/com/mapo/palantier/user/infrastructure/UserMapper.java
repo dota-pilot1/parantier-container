@@ -16,4 +16,5 @@ public interface UserMapper {
     boolean existsByEmail(@Param("email") String email);
     List<User> findAll();
     void updateRole(@Param("id") Long id, @Param("role") UserRole role);
+    void updateOrganization(@Param("id") Long id, @Param("organizationId") Long organizationId);
 }

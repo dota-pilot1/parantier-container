@@ -14,6 +14,7 @@ public class UserResponse {
     private String email;
     private String username;
     private UserRole role;
+    private Long organizationId;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -24,6 +25,7 @@ public class UserResponse {
                 .email(user.getEmail())
                 .username(user.getUsername())
                 .role(user.getRole())
+                .organizationId(user.getOrganizationId())
                 .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())

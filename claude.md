@@ -91,6 +91,10 @@ http://localhost:5173
 
 ## 개발 환경 실행
 
+**중요: 서버 시작/중지는 사용자가 직접 수행합니다.**
+- Claude는 서버를 자동으로 시작하거나 중지하지 않습니다
+- 개발 중 서버 재시작이 필요한 경우 사용자에게 안내만 합니다
+
 ### Backend
 ```bash
 cd parantier-api
@@ -101,6 +105,96 @@ cd parantier-api
 ```bash
 cd parantier-front
 npm run dev
+```
+
+## 공통 컴포넌트 참고
+
+### UI 컴포넌트
+
+#### shadcn/ui 컴포넌트
+프로젝트에서 사용하는 shadcn/ui 컴포넌트들은 다음 경로에 있습니다:
+
+**위치**: `parantier-front/src/shared/ui/`
+
+**사용 가능한 컴포넌트**:
+- `button.tsx` - 버튼 컴포넌트
+- `dialog.tsx` - 다이얼로그/모달
+- `alert-dialog.tsx` - 확인/취소 다이얼로그
+- `input.tsx` - 입력 필드
+- `checkbox.tsx` - 체크박스
+- `select.tsx` - 셀렉트 박스
+- `context-menu.tsx` - 우클릭 컨텍스트 메뉴
+- `dropdown-menu.tsx` - 드롭다운 메뉴
+- 기타 shadcn/ui 컴포넌트들
+
+**사용 방법**:
+```typescript
+import { Button } from '@/shared/ui/button'
+import { Dialog, DialogContent, DialogHeader } from '@/shared/ui/dialog'
+import { AlertDialog, AlertDialogContent } from '@/shared/ui/alert-dialog'
+```
+
+**새 컴포넌트 추가**:
+```bash
+cd parantier-front
+npx shadcn@latest add [component-name]
+```
+
+#### 커스텀 훅
+
+**위치**: `parantier-front/src/shared/hooks/`
+
+**사용 가능한 훅**:
+- `useConfirm.tsx` - 공통 확인 다이얼로그 훅
+
+**사용 방법**:
+```typescript
+import { useConfirm } from '@/shared/hooks/useConfirm'
+
+function MyComponent() {
+  const { confirm, ConfirmDialog } = useConfirm()
+
+  const handleDelete = async () => {
+    const confirmed = await confirm({
+      title: '삭제 확인',
+      description: '정말로 삭제하시겠습니까?',
+      confirmText: '삭제',
+      cancelText: '취소',
+      variant: 'destructive', // 'default' | 'destructive'
+    })
+
+    if (confirmed) {
+      // 삭제 로직
+    }
+  }
+
+  return (
+    <>
+      <button onClick={handleDelete}>삭제</button>
+      <ConfirmDialog />
+    </>
+  )
+}
+```
+
+### Toast 알림
+
+**사용 방법**:
+```typescript
+import { toast } from 'sonner'
+
+toast.success('성공 메시지')
+toast.error('에러 메시지')
+toast.info('정보 메시지')
+```
+
+### 아이콘
+
+**lucide-react 사용**:
+```typescript
+import { User, Building2, Trash2, Edit, Plus } from 'lucide-react'
+
+<User className="w-4 h-4" />
 ```
 
 ## Git Commit 규칙
