@@ -1,9 +1,8 @@
 import { Store } from '@tanstack/react-store'
-import type { Menu } from '@/types/menu'
 
 interface SidebarState {
   isOpen: boolean
-  selectedCategory: Menu | null
+  selectedCategory: string | null // 이제 카테고리 키만 저장 (예: 'admin')
 }
 
 const initialState: SidebarState = {
@@ -14,10 +13,10 @@ const initialState: SidebarState = {
 export const sidebarStore = new Store(initialState)
 
 export const sidebarActions = {
-  open: (category: Menu) => {
+  open: (categoryKey: string) => {
     sidebarStore.setState(() => ({
       isOpen: true,
-      selectedCategory: category,
+      selectedCategory: categoryKey,
     }))
   },
   close: () => {
@@ -26,12 +25,12 @@ export const sidebarActions = {
       selectedCategory: null,
     }))
   },
-  toggle: (category: Menu) => {
+  toggle: (categoryKey: string) => {
     const currentState = sidebarStore.state
-    if (currentState.isOpen && currentState.selectedCategory?.id === category.id) {
+    if (currentState.isOpen && currentState.selectedCategory === categoryKey) {
       sidebarActions.close()
     } else {
-      sidebarActions.open(category)
+      sidebarActions.open(categoryKey)
     }
   },
 }

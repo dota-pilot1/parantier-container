@@ -20,7 +20,9 @@ export function Header() {
   const handleMenuClick = (menu: Menu) => {
     // CATEGORY 타입이거나 path가 없으면서, children이 있을 때만 사이드바 토글
     if ((menu.menuType === 'CATEGORY' || !menu.path) && menu.children && menu.children.length > 0) {
-      sidebarActions.toggle(menu)
+      // 메뉴 이름을 기반으로 사이드바 키 결정
+      const sidebarKey = menu.name === '관리자' ? 'admin' : menu.name.toLowerCase()
+      sidebarActions.toggle(sidebarKey)
     } else if (menu.path) {
       // HEADER 타입 메뉴(일반 페이지)로 이동할 때는 사이드바 닫기
       sidebarActions.close()
