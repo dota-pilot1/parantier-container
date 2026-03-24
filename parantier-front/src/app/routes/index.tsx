@@ -25,8 +25,8 @@ const requireAuth = () => {
   }
 }
 
-// Authority 기반 권한 체크
-const requireAuthority = (requiredAuthority: string) => {
+// Authority 기반 권한 체크 (비동기 처리 추가)
+const requireAuthority = async (requiredAuthority: string) => {
   const auth = authStore.state
 
   if (!auth.isAuthenticated) {
@@ -34,8 +34,23 @@ const requireAuthority = (requiredAuthority: string) => {
     throw redirect({ to: '/dashboard' })
   }
 
+  // 인증 상태가 복원될 때까지 기다림 (user 정보가 없으면)
+  if (!auth.user) {
+    // 짧은 대기 후 재확인 (최대 3초)
+    for (let i = 0; i < 30; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      const currentAuth = authStore.state
+      if (currentAuth.user) {
+        break
+      }
+    }
+  }
+
+  // 다시 확인
+  const finalAuth = authStore.state
+
   // JWT에서 추출한 authorities 배열로 권한 체크
-  const userAuthorities = auth.user?.authorities || []
+  const userAuthorities = finalAuth.user?.authorities || []
 
   if (userAuthorities.includes(requiredAuthority)) {
     return
