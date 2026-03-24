@@ -12,6 +12,7 @@ import { UsersPage } from '@/pages/admin/users/UsersPage'
 import { MenusPage } from '@/pages/admin/menus/MenusPage'
 import { WorkspacePage } from '@/pages/admin/workspace/WorkspacePage'
 import { AuthoritiesPage } from '@/pages/admin/authorities/AuthoritiesPage'
+import { OrganizationsPage } from '@/pages/admin/organizations/OrganizationsPage'
 import { authStore } from '@/entities/user/model/authStore'
 import { toast } from 'sonner'
 
@@ -108,6 +109,14 @@ const adminAuthoritiesRoute = createRoute({
   component: AuthoritiesPage,
 })
 
+// 조직 관리
+const adminOrganizationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/organizations',
+  beforeLoad: () => requireAuthority('ORGANIZATION:READ'),
+  component: OrganizationsPage,
+})
+
 // Route Tree
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
@@ -116,6 +125,7 @@ const routeTree = rootRoute.addChildren([
   adminMenusRoute,
   adminWorkspaceRoute,
   adminAuthoritiesRoute,
+  adminOrganizationsRoute,
 ])
 
 // Router 생성
