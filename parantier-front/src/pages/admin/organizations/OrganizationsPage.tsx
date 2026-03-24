@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
-import { organizationApi } from '@/entities/organization/api/organizationApi'
 import type { Organization } from '@/types/organization'
 import { useState } from 'react'
+import { useOrganizations } from '@/features/admin/hooks/useOrganizations'
+import { Button } from '@/shared/ui/button'
 
 // 조직 타입별 아이콘
 const orgTypeIcons: Record<string, string> = {
@@ -50,30 +50,42 @@ function OrganizationTreeNode({ org, level = 0 }: { org: Organization; level?: n
 }
 
 export function OrganizationsPage() {
-  const { data: organizations = [], isLoading } = useQuery({
-    queryKey: ['organizations', 'tree'],
-    queryFn: () => organizationApi.getTree(),
-  })
+  const { data: organizations = [], isLoading, isError, error, refetch } = useOrganizations()
 
   if (isLoading) {
-    return <div className="p-6">로딩 중...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg">로딩 중...</p>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-lg text-destructive">
+          {error instanceof Error ? error.message : '조직 목록을 불러오지 못했습니다.'}
+        </p>
+        <Button onClick={() => refetch()}>다시 시도</Button>
+      </div>
+    )
   }
 
   return (
-    <div className="p-6">
+    <div className="container max-w-7xl mx-auto py-8 px-4">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">조직 관리</h1>
-        <p className="text-muted-foreground mt-1">
-          회사의 조직 구조를 관리합니다
+        <h1 className="text-3xl font-bold">조직 관리</h1>
+        <p className="text-muted-foreground mt-2">
+          회사의 조직 구조를 확인하고 관리할 수 있습니다.
         </p>
       </div>
 
-      <div className="bg-card rounded-lg border p-4">
+      <div className="bg-card rounded-lg border p-6">
         <h2 className="text-lg font-semibold mb-4">조직 구조</h2>
 
         {organizations.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            조직이 없습니다
+          <div className="text-center py-12 text-muted-foreground">
+            등록된 조직이 없습니다.
           </div>
         ) : (
           <div className="space-y-1">
