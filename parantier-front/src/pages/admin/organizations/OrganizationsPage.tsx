@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useOrganizations } from '@/features/admin/hooks/useOrganizations'
 import { useUsers } from '@/features/admin/hooks/useUsers'
 import { Button } from '@/shared/ui/button'
-import { Building2, Users as UsersIcon, Folder, User, UserPlus, Edit, Trash2 } from 'lucide-react'
+import { Building2, Users as UsersIcon, Folder, User, UserPlus, Edit, Trash2, UserMinus, Move } from 'lucide-react'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -111,14 +111,33 @@ function OrganizationTreeNode({
 
           {/* 소속 사용자 렌더링 */}
           {orgUsers.map((user) => (
-            <div
-              key={`user-${user.id}`}
-              className="ml-4 flex items-center gap-2 py-1.5 px-3 text-sm text-muted-foreground"
-            >
-              <span className="w-3" />
-              <User className="w-3.5 h-3.5" />
-              <span>{user.username}</span>
-            </div>
+            <ContextMenu key={`user-${user.id}`}>
+              <ContextMenuTrigger asChild>
+                <div className="ml-4 flex items-center gap-2 py-1.5 px-3 text-sm text-muted-foreground hover:bg-accent rounded cursor-pointer transition-colors">
+                  <span className="w-3" />
+                  <User className="w-3.5 h-3.5" />
+                  <span>{user.username}</span>
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent className="w-48">
+                <ContextMenuItem onClick={() => alert('사용자 정보 수정 준비 중')}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  <span>정보 수정</span>
+                </ContextMenuItem>
+                <ContextMenuItem onClick={() => alert('조직 이동 준비 중')}>
+                  <Move className="mr-2 h-4 w-4" />
+                  <span>조직 이동</span>
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem
+                  onClick={() => alert('팀원 제거 준비 중')}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <UserMinus className="mr-2 h-4 w-4" />
+                  <span>팀원 제거</span>
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       )}
