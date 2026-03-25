@@ -126,11 +126,6 @@ function AuthorityAssignmentDialog({
       await adminApi.updateUserAuthorities(userId, Array.from(selectedAuthorities))
       await queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       toast.success(`${username}님의 권한이 업데이트되었습니다.`)
-
-      // 토스트 메시지를 보여준 후 1.5초 뒤에 다이얼로그 닫기
-      setTimeout(() => {
-        onOpenChange(false)
-      }, 1500)
     } catch (error) {
       console.error('Failed to update authorities:', error)
       toast.error('권한 업데이트에 실패했습니다.')
