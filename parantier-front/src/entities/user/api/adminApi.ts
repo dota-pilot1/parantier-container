@@ -15,6 +15,31 @@ export interface UpdateRoleRequest {
   role: string
 }
 
+export interface Authority {
+  id: number
+  name: string
+  description: string
+  categoryId: number | null
+  createdAt: string
+}
+
+export interface UserAuthorityResponse {
+  userId: number
+  authorityId: number
+  authorityName: string
+  authorityDescription: string
+  authorityCategory: string
+  grantedAt: string
+  grantedBy: number
+  expiresAt: string | null
+  notes: string | null
+  isExpired: boolean
+}
+
+export interface UpdateUserAuthoritiesRequest {
+  authorityIds: number[]
+}
+
 export const adminApi = {
   /**
    * 전체 사용자 목록 조회 (관리자 전용)
@@ -48,5 +73,28 @@ export const adminApi = {
    */
   removeUserFromOrganization: async (userId: number): Promise<void> => {
     await apiClient.delete(`/admin/users/${userId}/organization`)
+  },
+
+  /**
+   * 사용자 권한 목록 조회 (관리자 전용)
+   */
+  getUserAuthorities: async (userId: number): Promise<UserAuthorityResponse[]> => {
+    const response = await apiClient.get<UserAuthorityResponse[]>(`/admin/users/${userId}/authorities`)
+    return response.data
+  },
+
+  /**
+   * 전체 권한 목록 조회 (관리자 전용)
+   */
+  getAllAuthorities: async (): Promise<Authority[]> => {
+    const response = await apiClient.get<Authority[]>('/admin/users/authorities/available')
+    return response.data
+  },
+
+  /**
+   * 사용자 권한 일괄 업데이트 (관리자 전용)
+   */
+  updateUserAuthorities: async (userId: number, authorityIds: number[]): Promise<void> => {
+    await apiClient.put(`/admin/users/${userId}/authorities`, { authorityIds })
   },
 }

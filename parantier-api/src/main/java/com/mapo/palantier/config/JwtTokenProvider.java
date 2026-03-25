@@ -110,6 +110,19 @@ public class JwtTokenProvider {
     }
 
     /**
+     * JWT 토큰에서 사용자 ID 추출
+     */
+    public Long getUserIdFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.get("userId", Long.class);
+    }
+
+    /**
      * JWT 토큰에서 역할 추출
      */
     public String getRoleFromToken(String token) {
