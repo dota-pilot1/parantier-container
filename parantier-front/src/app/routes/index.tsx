@@ -27,7 +27,7 @@ const requireAuth = () => {
 }
 
 // Role 기반 권한 체크 (관리자 페이지 접근용)
-const requireRole = (requiredRole: string) => {
+const requireRole = async (requiredRole: string) => {
   const auth = authStore.state
 
   if (!auth.isAuthenticated) {
@@ -35,8 +35,23 @@ const requireRole = (requiredRole: string) => {
     throw redirect({ to: '/dashboard' })
   }
 
+  // 인증 상태가 복원될 때까지 기다림 (user 정보가 없으면)
+  if (!auth.user) {
+    // 짧은 대기 후 재확인 (최대 3초)
+    for (let i = 0; i < 30; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      const currentAuth = authStore.state
+      if (currentAuth.user) {
+        break
+      }
+    }
+  }
+
+  // 다시 확인
+  const finalAuth = authStore.state
+
   // User role 체크
-  if (auth.user?.role === requiredRole) {
+  if (finalAuth.user?.role === requiredRole) {
     return
   }
 
