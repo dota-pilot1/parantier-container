@@ -205,7 +205,9 @@ function AuthorityAssignmentDialog({
             <div className="flex-1 flex flex-col">
               <div className="flex items-center justify-between px-4 py-3 bg-primary/10 rounded-lg mb-3">
                 <h3 className="font-semibold">할당된 권한</h3>
-                <span className="text-sm font-medium text-primary">{selectedAuthorities.size}개</span>
+                <span className="text-sm font-medium text-primary">
+                  {Object.keys(selectedGrouped).length}개 카테고리 / {selectedAuthorities.size}개 권한
+                </span>
               </div>
               <div className="border rounded-lg flex-1 overflow-y-auto">
                 {selectedAuthorityList.length === 0 ? (
@@ -283,7 +285,9 @@ function AuthorityAssignmentDialog({
             <div className="flex-1 flex flex-col">
               <div className="flex items-center justify-between px-4 py-3 bg-muted/50 rounded-lg mb-3">
                 <h3 className="font-semibold">사용 가능한 권한</h3>
-                <span className="text-sm text-muted-foreground">{availableAuthorityList.length}개</span>
+                <span className="text-sm text-muted-foreground">
+                  {Object.keys(availableGrouped).length}개 카테고리 / {availableAuthorityList.length}개 권한
+                </span>
               </div>
               <div className="border rounded-lg flex-1 overflow-y-auto">
                 {availableAuthorityList.length === 0 ? (
